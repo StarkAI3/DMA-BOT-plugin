@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DMA Assistant - Government of Maharashtra</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <!-- Top Utility Bar -->
+    <div class="utility-bar">
+      <div class="utility-left">
+        <div class="accessibility-colors">
+          <div class="color-box purple"></div>
+          <div class="color-box green"></div>
+          <div class="color-box red"></div>
+        </div>
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+      </div>
+      <div class="utility-right">
+        <div class="language-selector">
+          <select>
+            <option value="en">English</option>
+            <option value="mr">मराठी</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Header -->
+    <header class="main-header">
+      <div class="header-content">
+        <div class="brand-section">
+          <div class="state-emblem">
+            <img src="/static/seal.svg" alt="Maharashtra State Emblem" />
+          </div>
+          <div class="brand-text">
+            <h1 class="gov-title">Government of Maharashtra</h1>
+            <h2 class="dept-title">Directorate of Municipal Administration</h2>
+          </div>
+        </div>
+        <div class="national-emblem">
+          <div class="ashoka-chakra">☸</div>
+          <div class="motto">सत्यमेव जयते</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+      <div class="nav-content">
+        <ul class="nav-menu">
+          <li><a href="#" class="nav-link">Home</a></li>
+          <li><a href="#" class="nav-link">About Us</a></li>
+          <li><a href="#" class="nav-link">Municipal Bodies</a></li>
+          <li><a href="#" class="nav-link">Employee Corner</a></li>
+          <li><a href="#" class="nav-link">RTS Citizen Services</a></li>
+          <li><a href="#" class="nav-link">Dashboard</a></li>
+          <li><a href="#" class="nav-link">RTI Schemes</a></li>
+          <li><a href="#" class="nav-link">Contact Us</a></li>
+          <li><a href="#" class="nav-link">More</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="main-content">
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <div class="hero-background">
+          <div class="hero-left">
+            <div class="hero-emblems">
+              <div class="hero-national-emblem">☸</div>
+              <div class="hero-state-emblem">
+                <img src="/static/seal.svg" alt="Maharashtra State Emblem" />
+              </div>
+            </div>
+            <div class="hero-text">
+              <p>Government of Maharashtra, Directorate of Municipal Administration</p>
+            </div>
+          </div>
+          <div class="hero-right">
+            <div class="festive-message">
+              <p class="welcome-text">Welcome to DMA Assistant with tradition and protect nature with care..!</p>
+              <p class="festival-text">HAPPY</p>
+              <h2 class="festival-title">Digital Governance</h2>
+            </div>
+            <div class="decorative-elements">
+              <div class="marigold-strings"></div>
+              <div class="leaf-patterns"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Content Section -->
+      <section class="content-section">
+        <div class="content-grid">
+          <div class="main-content-area">
+            <div class="info-card">
+              <h3>Innovative & Special Projects</h3>
+              <p>Explore the latest initiatives and special projects undertaken by the Directorate of Municipal Administration.</p>
+            </div>
+            <div class="services-grid">
+              <div class="service-card">
+                <h4>Municipal Services</h4>
+                <p>Access various municipal services and information</p>
+              </div>
+              <div class="service-card">
+                <h4>Citizen Portal</h4>
+                <p>Online services for citizens</p>
+              </div>
+              <div class="service-card">
+                <h4>Employee Resources</h4>
+                <p>Resources and tools for municipal employees</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Chatbot Panel -->
+    <div class="chatbot-panel">
+      <div class="chatbot-header">
+        <img src="/static/seal.svg" alt="DMA Logo" class="dma-logo-icon" />
+        <div class="chatbot-title">DMA Assistant</div>
+      </div>
+      
+      <div class="chatbot-body">
+        <div id="messages" class="messages" aria-live="polite">
+          <!-- Welcome block will be shown initially -->
+          <div class="welcome-block" id="welcomeBlock">
+            <img class="dma-logo-big" src="/static/seal.svg" alt="DMA Logo" />
+            <div class="welcome-message">
+              Welcome to Virtual Assistant of Directorate of Municipal Administration 🙏
+              <br><small>Ask questions in English or Marathi</small>
+            </div>
+            <button class="start-chat-btn" id="startChatBtn">Start the chat</button>
+          </div>
+        </div>
+        
+        <div id="inputContainer" class="chat-form" style="display: none;">
+          <input 
+            id="query" 
+            name="query" 
+            class="chat-input" 
+            placeholder="Ask your question in English or Marathi..." 
+            autocomplete="off"
+          />
+          <button class="send-button" type="submit" id="sendBtn">
+            <svg viewBox="0 0 24 24"><path fill="white" d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Announcement Bar -->
+    <div class="announcement-bar">
+      <div class="announcement-content">
+        <span class="announcement-label">Important Announcement</span>
+        <span class="announcement-text">e-governance improvement evaluation process</span>
+        <span class="announcement-detail">
+          Maharashtra Municipal Council State Level Cadre
+          <span class="new-badge">NEW</span>
+        </span>
+      </div>
+    </div>
+
+    <script src="/static/main.js" defer></script>
+  </body>
+</html>
+

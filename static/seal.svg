@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+  <defs>
+    <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffcf33"/>
+      <stop offset="1" stop-color="#f2b400"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#g)" stroke="#d69a00" stroke-width="2"/>
+  <circle cx="32" cy="32" r="18" fill="none" stroke="#8a5b00" stroke-width="2" stroke-dasharray="3 3"/>
+  <text x="32" y="37" text-anchor="middle" font-family="Segoe UI, Ubuntu, sans-serif" font-size="14" fill="#3a2400">DMA</text>
+</svg>
+

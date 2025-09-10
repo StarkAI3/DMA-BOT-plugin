@@ -1,0 +1,134 @@
+service - feedback form
+link - https://mahadma.maharashtra.gov.in/en/feedback-form/
+
+service - E-Office for employees
+link - https://parichay.nic.in/pnv1/assets/login?sid=MHAMaharashtra
+
+service - iGOT Karmayogi
+link - https://igotkarmayogi.gov.in/#/
+
+service - Marriage Registration and Certificate
+link- https://mahaulb.in/MahaULB/web/marriage/initRegistration.html
+
+service - Marriage Registration Correction / Marriage Registration Amendemnt 
+link - https://mahaulb.in/MahaULB/web/marriage/initRegistration.html
+
+service - schedule a new appointment / Extract of Marriage Registration 
+link - https://mahaulb.in/MahaULB/web/marriage/initRegistration.html
+
+service - reissue of Marriage Certificate 
+link - https://mahaulb.in/MahaULB/web/marriage/initRegistration.html
+
+service - certificate of Non - Profatibility for a business meat Shop / Meat shop NOC 
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/BMS/noc/noc
+
+service - Business medical Business store NOC
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/NOS/noc/noc
+
+service -Business NOC for hospital  
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/BMH/noc/noc
+
+service- business NOC For Tours and travels 
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/NOT/noc/noc
+
+Service - Business pool snooker/ indoor Business NOC 
+link- https://mahaulb.in/MahaULB/common/application/showServicePage/NOB/noc/noc
+
+service - NOC for Electric meter installation
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/NOE/noc/noc
+
+service - NOC for Fast food on wheels/road/at public place 
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/NON/noc/noc
+
+service - NOC for Hoarding / Banner
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/NOH/noc/noc
+
+service - NOC for mandap Stall
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/NOM/noc/noc
+
+service - NOC for Road digging for cable installation 
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/NOR/noc/noc
+
+service -NOC from Municipality or other local body for state license of food business 
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/CLFL/noc/noc
+
+service - Health NOC by Municipality or Panchayat for food registrartion Certificate 
+link - https://mahaulb.in/MahaULB/common/application/showServicePage/CLFR/noc/noc
+
+service-  water tax-Change of Usage
+link- https://mahaulb.in/MahaULB/water/showServicePage/changeSizeAndUsage
+
+service - Change of Connection Size
+link- https://mahaulb.in/MahaULB/water/showServicePage/changeSizeAndUsage
+
+service - Change of Ownership
+link- https://mahaulb.in/MahaULB/water/showServicePage/changeOfOwnership
+
+service - New Water Connection
+link- https://mahaulb.in/MahaULB/water/showServicePage/waterConnection
+
+service - No Due Certificate
+link- https://mahaulb.in/MahaULB/water/showServicePage/noDueCertificate
+
+servive - Water Reconnection
+link- https://mahaulb.in/MahaULB/water/showServicePage/reconnection
+
+service- Renewal Of Plumber License 
+link- https://mahaulb.in/MahaULB/water/showServicePage/renewPlumberLicense
+ 
+service -  Temporary/Permanent Disconnection 
+link- https://mahaulb.in/MahaULB/water/showServicePage/tempPermDisconnection
+
+service - Plumber License 
+linlk- https://mahaulb.in/MahaULB/water/showServicePage/newPlumberLicense
+    
+servcie - Water Bill Payment /issuance of duplicate Water Bill Payment  water bill
+link- https://mahaulb.in/MahaULB/water/showServicePage/payMyDues
+
+service - trade license   -  Change in Business 
+link- https://mahaulb.in/MahaULB/duplicate/application/showServicePage/TCB/change-in-business/market
+
+service - Change In Business Area
+link- https://mahaulb.in/MahaULB/duplicate/application/showServicePage/CBA/service-change-in-tradearea/market
+
+servcie -Change In Business Name
+link- https://mahaulb.in/MahaULB/duplicate/application/showServicePage/TCN/change-name-of-business/market
+
+service - Correction in Owner/ Partner Name-
+link- https://mahaulb.in/MahaULB/duplicate/application/showServicePage/TOP/change-in-name-of-owner-partners/market
+
+service - Application for Duplicate of License
+link- https://mahaulb.in/MahaULB/duplicate/application/showServicePage/TDL/service-duplicate-license/market
+
+service - Change in No. Of Partners (Increase / Decrease) 
+link- https://mahaulb.in/MahaULB/duplicate/application/showServicePage/TID/change-number-of-partners/market
+
+service - Issue od lisence
+link- https://mahaulb.in/MahaULB/duplicate/application/showServicePage/TIL/newtrade-license/market
+
+service -  Application for Renewal of License
+link- https://mahaulb.in/MahaULB/duplicate/application/showServicePage/TRL/renewal-tradelic/market
+
+service-  Transfer of License heridity-
+link- https://mahaulb.in/MahaULB/duplicate/application/showServicePage/TTL/transfer-of-license/market
+
+service -   Transfer of License by other mode 
+link-  https://mahaulb.in/MahaULB/duplicate/application/showServicePage/TLO/transfer-of-license/market
+
+service  -  Application for Cancellation of License
+link-  https://mahaulb.in/MahaULB/duplicate/application/showServicePage/TCL/service-application-for-cancellation-of-license/market
+     
+service - property tax  - extract of property 
+link - https://mahaulb.in/MahaULB/property/propertyExtract/showPropertyExtractPage
+   
+service - No Due Certificate
+link- https://mahaulb.in/MahaULB/property/noDueCertificate/showNdcPage
+
+service - Transfer of Property by Nomination/ Heredity
+link- https://mahaulb.in/MahaULB/property/transfer/rest/showServicePage/propertyTansfer
+
+service - Transfer of Property by Sell/ Purchase/ Other Mode
+link- https://mahaulb.in/MahaULB/property/transfer/rest/showServicePage/propertyTansfer
+
+
+
