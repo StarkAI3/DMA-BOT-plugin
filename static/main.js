@@ -80,31 +80,8 @@ function appendMessage(text, who = 'bot', sources = [], language = null) {
   
   messagesEl.appendChild(wrap);
   
-  // Add sources if available
-  if (sources && sources.length > 0) {
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    meta.textContent = 'Sources:';
-    
-    const list = document.createElement('div');
-    list.className = 'sources';
-    
-    sources.forEach(s => {
-      if (!s.url) return;
-      const a = document.createElement('a');
-      a.className = 'source';
-      a.href = s.url;
-      a.target = '_blank';
-      a.rel = 'noreferrer';
-      a.textContent = s.title || new URL(s.url).hostname;
-      list.appendChild(a);
-    });
-    
-    const box = document.createElement('div');
-    box.appendChild(meta);
-    box.appendChild(list);
-    messagesEl.appendChild(box);
-  }
+  // Sources are kept in backend but not displayed to keep UI clean and focused
+  // This improves user experience by reducing visual clutter
   
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -165,11 +142,16 @@ async function sendMessage() {
     
     const data = await response.json();
     
+    // Update session ID if provided by server
+    if (data.session_id) {
+      sessionId = data.session_id;
+    }
+    
     // Hide typing indicator
     hideTypingIndicator(typingEl);
     
-    // Add bot response with language detection
-    appendMessage(data.answer, 'bot', data.sources || [], data.detected_lang);
+    // Add bot response with language detection (sources kept in backend only)
+    appendMessage(data.answer, 'bot', [], data.detected_lang);
     
   } catch (error) {
     console.error('Error sending message:', error);

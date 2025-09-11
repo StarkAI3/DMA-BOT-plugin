@@ -89,6 +89,23 @@ class AdvancedPreprocessor:
     def load_embedding_model(self) -> None:
         """Load E5-base-v2 embedding model for semantic chunking"""
         try:
+            # Configure SSL to handle corporate network certificate issues
+            import ssl
+            import urllib3
+            import os
+            
+            # Disable SSL warnings and verification for model download
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            # Set environment variables to disable SSL verification
+            os.environ['CURL_CA_BUNDLE'] = ''
+            os.environ['REQUESTS_CA_BUNDLE'] = ''
+            
+            # Create unverified SSL context
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
             self.embedding_model = SentenceTransformer('intfloat/e5-base-v2', device='cpu')
             logger.info("Loaded E5-base-v2 embedding model (768-dim)")
         except Exception as e:

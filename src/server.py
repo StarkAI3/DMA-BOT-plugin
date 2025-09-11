@@ -1,14 +1,20 @@
 import os
+import uuid
 from contextlib import asynccontextmanager
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 # Local import of advanced RAG system
-from .advanced_query_rag import AdvancedRAGQuerySystem
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from advanced_query_rag import AdvancedRAGQuerySystem
 
 
 BASE_DIR = "/home/stark/Desktop/DMA_BOT"
@@ -17,6 +23,66 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 # Global RAG system instance
 rag_system = None
+
+# In-memory session store (in production, use Redis or database)
+conversation_sessions: Dict[str, Dict[str, Any]] = {}
+
+class ChatMessage(BaseModel):
+    query: str
+    session_id: Optional[str] = None
+    
+class ConversationHistory:
+    def __init__(self):
+        self.messages: List[Dict[str, Any]] = []
+        self.last_activity = datetime.now()
+        
+    def add_message(self, role: str, content: str, metadata: Optional[Dict] = None):
+        self.messages.append({
+            "role": role,
+            "content": content,
+            "timestamp": datetime.now().isoformat(),
+            "metadata": metadata or {}
+        })
+        self.last_activity = datetime.now()
+        
+        # Keep only last 10 messages to manage memory
+        if len(self.messages) > 10:
+            self.messages = self.messages[-10:]
+    
+    def get_recent_context(self, max_messages: int = 6) -> str:
+        """Get recent conversation context as formatted string"""
+        if not self.messages:
+            return ""
+            
+        recent_messages = self.messages[-max_messages:]
+        context_parts = []
+        
+        for msg in recent_messages:
+            role = "User" if msg["role"] == "user" else "Assistant"
+            context_parts.append(f"{role}: {msg['content']}")
+        
+        return "\n".join(context_parts)
+
+def get_or_create_session(session_id: Optional[str] = None) -> tuple[str, ConversationHistory]:
+    """Get existing session or create new one"""
+    global conversation_sessions
+    
+    # Clean up old sessions (older than 1 hour)
+    current_time = datetime.now()
+    expired_sessions = [
+        sid for sid, session in conversation_sessions.items()
+        if current_time - session.last_activity > timedelta(hours=1)
+    ]
+    for sid in expired_sessions:
+        del conversation_sessions[sid]
+    
+    if session_id and session_id in conversation_sessions:
+        return session_id, conversation_sessions[session_id]
+    else:
+        # Create new session
+        new_session_id = str(uuid.uuid4())
+        conversation_sessions[new_session_id] = ConversationHistory()
+        return new_session_id, conversation_sessions[new_session_id]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -62,13 +128,16 @@ def serve_index() -> FileResponse:
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.post("/api/chat")
-def api_chat(payload: Dict[str, Any]) -> Dict[str, Any]:
+def api_chat(message: ChatMessage) -> Dict[str, Any]:
     global rag_system
     
-    query: Optional[str] = (payload or {}).get("query")
+    query = message.query
     if not query or not isinstance(query, str):
         raise HTTPException(status_code=400, detail="Field 'query' is required and must be a string.")
 
+    # Get or create conversation session
+    session_id, conversation = get_or_create_session(message.session_id)
+    
     # Lightweight language detection: Devanagari range
     detected_lang = "mr" if any("\u0900" <= ch <= "\u097F" for ch in query) else "en"
 
@@ -76,11 +145,23 @@ def api_chat(payload: Dict[str, Any]) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail="RAG system not initialized")
 
     try:
+        # Add user message to conversation history
+        conversation.add_message("user", query)
+        
+        # Get conversation context for better understanding
+        conversation_context = conversation.get_recent_context()
+        
         # Minimal latency logging
         import time
         start = time.time()
-        result = rag_system.query(query)
+        
+        # Pass conversation context to RAG system
+        result = rag_system.query(query, conversation_context=conversation_context)
         elapsed_ms = int((time.time() - start) * 1000)
+        
+        # Add assistant response to conversation history
+        response_text = result.get("response", "")
+        conversation.add_message("assistant", response_text, {"sources": result.get("sources", [])})
         
         # Normalize sources for the frontend (array of {url, title})
         norm_sources = []
@@ -95,10 +176,12 @@ def api_chat(payload: Dict[str, Any]) -> Dict[str, Any]:
             })
 
         return {
-            "answer": result.get("response", ""),
+            "answer": response_text,
             "sources": norm_sources,
             "detected_lang": detected_lang,
             "latency_ms": elapsed_ms,
+            "session_id": session_id,
+            "conversation_length": len(conversation.messages),
             "metadata": result.get("metadata", {})
         }
     except Exception as exc:

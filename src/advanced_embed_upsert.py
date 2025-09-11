@@ -64,6 +64,23 @@ class AdvancedEmbeddingPipeline:
     def setup_model(self) -> bool:
         """Setup E5-base-v2 embedding model with hardware optimization"""
         try:
+            # Configure SSL to handle corporate network certificate issues
+            import ssl
+            import urllib3
+            import os
+            
+            # Disable SSL warnings and verification for model download
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            # Set environment variables to disable SSL verification
+            os.environ['CURL_CA_BUNDLE'] = ''
+            os.environ['REQUESTS_CA_BUNDLE'] = ''
+            
+            # Create unverified SSL context
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
             self.model = SentenceTransformer('intfloat/e5-base-v2', device=DEVICE)
             self.model_name = "e5-base-v2"
             logger.info("Loaded E5-base-v2 embedding model (768-dim)")
@@ -83,7 +100,7 @@ class AdvancedEmbeddingPipeline:
             return True
             
         except Exception as e:
-            logger.error(f"Failed to setup embedding model: {e}")
+            logger.error(f"Failed to setup E5-base-v2 embedding model: {e}")
             return False
     
     def setup_pinecone(self) -> bool:

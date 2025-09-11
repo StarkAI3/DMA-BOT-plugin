@@ -1,0 +1,476 @@
+# ROBUST TEST QUERIES FOR DMA BOT
+# Generated for testing the bot across Normal Data, Tabular Data, and Services Data
+# Languages: English, Marathi Devanagari, Marathi Transliterated
+
+where to pay property tax 
+what is the population of akole nagar panchayat council which comes under nashik district
+What is the mission and vision of Directorate of Municipal Administration?
+How to get NOC for hospital business?
+nashik jilhyatil akole nagar panchayat  council chi population kiti ahe 
+pune jilhyatil alandi muncipal council chi population kiti ahe
+
+
+# =============================================================================
+# NORMAL DATA QUERIES
+# =============================================================================
+
+## English Queries - Normal Data
+What is the mission and vision of Directorate of Municipal Administration?
+Tell me about DMA's objectives and goals
+What are the key functions of Urban Local Bodies in Maharashtra?
+Explain the 74th Constitutional Amendment and its impact on urban governance
+What is the accessibility statement of DMA?
+What are the copyright policies of the Directorate?
+What is the disclaimer policy?
+How does DMA support ease of doing business?
+What events are organized by DMA?
+What is the overview of DMA's structure and functions?
+What are the privacy policies?
+What are the terms and conditions?
+What is the desk structure of DMA?
+What is the department contact information?
+What is the Right to Information (RTI) process?
+What announcements are available?
+What are the different schemes available?
+Tell me about PM SVANidhi scheme
+What is PMAY scheme?
+What is Mission AMRUT?
+What is Mission NULM?
+What is Smart City Mission?
+What is Swachh Bharat Mission?
+What are the current tender notices?
+What advertisements are available?
+What are the municipal council cadre recruitment details?
+What are the municipal acts and rules?
+What are the government policies?
+What are the important service rules?
+What are the rules and by-laws?
+What circulars are available?
+What are the standing orders?
+
+## Marathi Devanagari Queries - Normal Data
+महानगरपालिका प्रशासन निदेशालयाचे ध्येय आणि दृष्टी काय आहे?
+DMA च्या उद्दिष्टे आणि ध्येयांबद्दल सांगा
+महाराष्ट्रातील शहरी स्थानिक स्वराज्य संस्थांची मुख्य कार्ये काय आहेत?
+74वी घटनात्मक दुरुस्ती आणि शहरी शासनावर त्याचा प्रभाव स्पष्ट करा
+DMA चे सुलभता विधान काय आहे?
+निदेशालयाचे कॉपीराइट धोरणे काय आहेत?
+नकारार्थ विधान काय आहे?
+DMA व्यवसाय सुलभतेला कसे मदत करते?
+DMA कडून कोणते कार्यक्रम आयोजित केले जातात?
+DMA च्या रचना आणि कार्यांचा आढावा काय आहे?
+गोपनीयता धोरणे काय आहेत?
+अटी आणि शर्ती काय आहेत?
+DMA ची डेस्क रचना काय आहे?
+विभागीय संपर्क माहिती काय आहे?
+माहितीचा अधिकार (RTI) प्रक्रिया काय आहे?
+कोणती घोषणा उपलब्ध आहेत?
+कोणती योजना उपलब्ध आहेत?
+PM SVANidhi योजनेबद्दल सांगा
+PMAY योजना काय आहे?
+Mission AMRUT काय आहे?
+Mission NULM काय आहे?
+Smart City Mission काय आहे?
+Swachh Bharat Mission काय आहे?
+सध्याच्या टेंडर सूचना कोणत्या आहेत?
+कोणते जाहिरात उपलब्ध आहेत?
+महानगरपालिका कॅडर भरतीची तपशील काय आहे?
+महानगरपालिका कायदे आणि नियम काय आहेत?
+सरकारी धोरणे काय आहेत?
+महत्वाचे सेवा नियम काय आहेत?
+नियम आणि उपनियम काय आहेत?
+कोणती परिपत्रके उपलब्ध आहेत?
+स्थायी आदेश काय आहेत?
+
+## Marathi Transliterated Queries - Normal Data
+Mahangarpalika Prashasan Nideshalayache dhyey ani drishti kay ahe?
+DMA chya uddishte ani dhyeyanbaddal sanga
+Maharashtratil shahari sthanik swarajya sansthanchi mukhya karye kay ahet?
+74vi ghatnatmak durusti ani shahari shasanavar tyacha prabhav spashata kara
+DMA che sulabhata vidhan kay ahe?
+Nideshalayache copyright dharane kay ahet?
+Nakarth vidhan kay ahe?
+DMA vyavasay sulabhate la kase madat karate?
+DMA kadun konate karyakram ayojit kele jatat?
+DMA chya rachana ani karyancha adhava kay ahe?
+Gopniyata dharane kay ahet?
+Ati ani sharti kay ahet?
+DMA chi desk rachana kay ahe?
+Vibhagiya sampark mahiti kay ahe?
+Mahiticha adhikar (RTI) prakriya kay ahe?
+Konati ghoshana upalabdh ahet?
+Konati yojana upalabdh ahet?
+PM SVANidhi yojanebaddal sanga
+PMAY yojana kay ahe?
+Mission AMRUT kay ahe?
+Mission NULM kay ahe?
+Smart City Mission kay ahe?
+Swachh Bharat Mission kay ahe?
+Sadhychya tender suchana konatya ahet?
+Konate jahirata upalabdh ahet?
+Mahangarpalika cadre bhartichi tashil kay ahe?
+Mahangarpalika kayde ani niyam kay ahet?
+Sarkari dharane kay ahet?
+Mahatvache seva niyam kay ahet?
+Niyam ani upniyam kay ahet?
+Konati paripatrike upalabdh ahet?
+Sthayi adesh kay ahet?
+
+# =============================================================================
+# TABULAR DATA QUERIES
+# =============================================================================
+
+## English Queries - Tabular Data
+What are the administrative divisions in Maharashtra?
+Show me the department contact information
+List all municipal corporations in Maharashtra
+What are the municipal councils in the state?
+Where are the regional offices located?
+What is the promotion list for employees?
+Show me the seniority list
+What are the service rule guidelines?
+What are the transfer and posting details?
+How many municipal corporations are there in Maharashtra?
+Which is the largest municipal corporation by population?
+What are the different classes of municipal corporations?
+Which corporations were established in 2001?
+What is the population of Pune Municipal Corporation?
+Which division has the most corporations?
+What are the contact details for desk 1?
+What is the email for Chief Officer Establishment?
+How many desks are there in DMA?
+What are the different desk functions?
+What is the contact for e-Governance desk?
+What are the regional office contact details?
+Which districts have municipal corporations?
+What is the foundation year of Mumbai Municipal Corporation?
+Which corporation has the largest area?
+What are the employee promotion orders?
+What are the transfer posting details?
+What are the service rule guidelines for employees?
+
+## Marathi Devanagari Queries - Tabular Data
+महाराष्ट्रातील प्रशासकीय विभाग कोणते आहेत?
+विभागीय संपर्क माहिती दाखवा
+महाराष्ट्रातील सर्व महानगरपालिका यादी करा
+राज्यातील महानगरपालिका कोणत्या आहेत?
+प्रादेशिक कार्यालये कोठे आहेत?
+कर्मचाऱ्यांची पदोन्नती यादी काय आहे?
+वरिष्ठता यादी दाखवा
+सेवा नियम मार्गदर्शक तत्त्वे काय आहेत?
+स्थानांतरण आणि पदस्थापना तपशील काय आहेत?
+महाराष्ट्रात किती महानगरपालिका आहेत?
+लोकसंख्येनुसार सर्वात मोठी महानगरपालिका कोणती आहे?
+महानगरपालिकांच्या वेगवेगळ्या वर्ग कोणते आहेत?
+2001 मध्ये कोणत्या महानगरपालिका स्थापन झाल्या?
+पुणे महानगरपालिकेची लोकसंख्या किती आहे?
+कोणत्या विभागात सर्वात जास्त महानगरपालिका आहेत?
+डेस्क 1 साठी संपर्क तपशील काय आहेत?
+मुख्य अधिकारी स्थापनेचा ईमेल काय आहे?
+DMA मध्ये किती डेस्क आहेत?
+वेगवेगळ्या डेस्कची कार्ये काय आहेत?
+ई-गव्हर्नन्स डेस्कचा संपर्क काय आहे?
+प्रादेशिक कार्यालयाचे संपर्क तपशील काय आहेत?
+कोणत्या जिल्ह्यांमध्ये महानगरपालिका आहेत?
+मुंबई महानगरपालिकेचे स्थापना वर्ष काय आहे?
+कोणत्या महानगरपालिकेचे क्षेत्रफळ सर्वात मोठे आहे?
+कर्मचाऱ्यांचे पदोन्नती आदेश काय आहेत?
+स्थानांतरण पदस्थापना तपशील काय आहेत?
+कर्मचाऱ्यांसाठी सेवा नियम मार्गदर्शक तत्त्वे काय आहेत?
+
+## Marathi Transliterated Queries - Tabular Data
+Maharashtratil prashasakiy vibhag konate ahet?
+Vibhagiya sampark mahiti dakhav
+Maharashtratil sarva mahangarpalika yadi kara
+Rajyatil mahangarpalika konatya ahet?
+Pradeshiya karyalaye kothe ahet?
+Karmacharyanchi padonnati yadi kay ahe?
+Varishthata yadi dakhav
+Seva niyam margadarshak tattve kay ahet?
+Sthanantaran ani padasthapana tashil kay ahet?
+Maharashtrat kiti mahangarpalika ahet?
+Loksankhyenusar sarvat mothi mahangarpalika konati ahe?
+Mahangarpalikanchya vegvegalya varg konate ahet?
+2001 madhye konatya mahangarpalika sthaapan zhalya?
+Pune mahangarpalikechi loksankhya kiti ahe?
+Konatya vibhagat sarvat jast mahangarpalika ahet?
+Desk 1 sathi sampark tashil kay ahet?
+Mukhya adhikari sthapanecha email kay ahe?
+DMA madhye kiti desk ahet?
+Vegvegalya deskchi karye kay ahet?
+E-governance deskcha sampark kay ahe?
+Pradeshiya karyalayache sampark tashil kay ahet?
+Konatya jilhyamadhye mahangarpalika ahet?
+Mumbai mahangarpalikeche sthaapana varsh kay ahe?
+Konatya mahangarpalikeche kshetrafal sarvat mothe ahe?
+Karmacharyanche padonnati adesh kay ahet?
+Sthanantaran padasthapana tashil kay ahet?
+Karmacharyansathi seva niyam margadarshak tattve kay ahet?
+
+# =============================================================================
+# SERVICES DATA QUERIES
+# =============================================================================
+
+## English Queries - Services Data
+What services are available for citizens?
+How can I apply for marriage registration?
+What is the process for marriage certificate?
+How to get a duplicate marriage certificate?
+What is the procedure for marriage registration correction?
+How to schedule a marriage registration appointment?
+What is the process for business NOC?
+How to get NOC for meat shop?
+What is the procedure for medical store NOC?
+How to get NOC for hospital business?
+What is the process for tours and travels NOC?
+How to get NOC for pool/snooker business?
+What is the procedure for electric meter installation NOC?
+How to get NOC for fast food business?
+What is the process for hoarding/banner NOC?
+How to get NOC for mandap stall?
+What is the procedure for road digging NOC?
+How to get food business license NOC?
+What is the process for food registration certificate NOC?
+How to change water tax usage?
+What is the procedure for water connection size change?
+How to change water connection ownership?
+How to get new water connection?
+What is the process for water no due certificate?
+How to reconnect water connection?
+How to renew plumber license?
+What is the procedure for water disconnection?
+How to get new plumber license?
+How to pay water bill?
+How to get duplicate water bill?
+What is the process for trade license change in business?
+How to change business area?
+What is the procedure for business name change?
+How to correct owner/partner name?
+How to get duplicate trade license?
+How to change number of partners?
+How to get new trade license?
+What is the process for trade license renewal?
+How to transfer trade license by heredity?
+How to transfer trade license by other mode?
+How to cancel trade license?
+What is the procedure for property tax extract?
+How to get property no due certificate?
+How to transfer property by nomination?
+How to transfer property by sale/purchase?
+What is the feedback form process?
+How to access E-Office for employees?
+What is iGOT Karmayogi?
+
+## Marathi Devanagari Queries - Services Data
+नागरिकांसाठी कोणती सेवा उपलब्ध आहेत?
+लग्न नोंदणीसाठी कसे अर्ज करावा?
+लग्न प्रमाणपत्राची प्रक्रिया काय आहे?
+डुप्लिकेट लग्न प्रमाणपत्र कसे मिळवावे?
+लग्न नोंदणी दुरुस्तीची प्रक्रिया काय आहे?
+लग्न नोंदणी अपॉइंटमेंट कसे बुक करावे?
+व्यवसाय NOC ची प्रक्रिया काय आहे?
+मांस दुकानासाठी NOC कसे मिळवावे?
+औषध दुकानासाठी NOC ची प्रक्रिया काय आहे?
+दवाखाना व्यवसायासाठी NOC कसे मिळवावे?
+टूर्स आणि ट्रॅव्हल्ससाठी NOC ची प्रक्रिया काय आहे?
+पूल/स्नूकर व्यवसायासाठी NOC कसे मिळवावे?
+विद्युत मीटर स्थापनेसाठी NOC ची प्रक्रिया काय आहे?
+फास्ट फूड व्यवसायासाठी NOC कसे मिळवावे?
+होर्डिंग/बॅनरसाठी NOC ची प्रक्रिया काय आहे?
+मंडप स्टॉलसाठी NOC कसे मिळवावे?
+रस्ता खोदणीसाठी NOC ची प्रक्रिया काय आहे?
+अन्न व्यवसाय लायसन्ससाठी NOC कसे मिळवावे?
+अन्न नोंदणी प्रमाणपत्रासाठी NOC ची प्रक्रिया काय आहे?
+पाणी कर वापर कसे बदलावे?
+पाणी कनेक्शन आकार बदलण्याची प्रक्रिया काय आहे?
+पाणी कनेक्शन मालकी कसे बदलावे?
+नवीन पाणी कनेक्शन कसे मिळवावे?
+पाणी नो ड्यू प्रमाणपत्राची प्रक्रिया काय आहे?
+पाणी कनेक्शन पुन्हा कसे जोडावे?
+प्लंबर लायसन्स कसे नूतनीकरण करावे?
+पाणी कनेक्शन तोडण्याची प्रक्रिया काय आहे?
+नवीन प्लंबर लायसन्स कसे मिळवावे?
+पाणी बिल कसे भरावे?
+डुप्लिकेट पाणी बिल कसे मिळवावे?
+व्यापार लायसन्स व्यवसाय बदलाची प्रक्रिया काय आहे?
+व्यवसाय क्षेत्र कसे बदलावे?
+व्यवसाय नाव बदलण्याची प्रक्रिया काय आहे?
+मालक/भागीदार नाव कसे दुरुस्त करावे?
+डुप्लिकेट व्यापार लायसन्स कसे मिळवावे?
+भागीदारांची संख्या कसे बदलावे?
+नवीन व्यापार लायसन्स कसे मिळवावे?
+व्यापार लायसन्स नूतनीकरणाची प्रक्रिया काय आहे?
+वंशपरंपरेनुसार व्यापार लायसन्स कसे हस्तांतरित करावे?
+इतर मार्गाने व्यापार लायसन्स कसे हस्तांतरित करावे?
+व्यापार लायसन्स कसे रद्द करावे?
+मालमत्ता कर एक्सट्रॅक्टची प्रक्रिया काय आहे?
+मालमत्ता नो ड्यू प्रमाणपत्र कसे मिळवावे?
+नामांकनाने मालमत्ता कसे हस्तांतरित करावे?
+विक्री/खरेदीने मालमत्ता कसे हस्तांतरित करावे?
+फीडबॅक फॉर्मची प्रक्रिया काय आहे?
+कर्मचाऱ्यांसाठी E-Office कसे वापरावे?
+iGOT Karmayogi काय आहे?
+
+## Marathi Transliterated Queries - Services Data
+Nagrikansathi konati seva upalabdh ahet?
+Lagna nondanisathi kase arj karava?
+Lagna pramanpatrachi prakriya kay ahe?
+Duplicate lagna pramanpatra kase milvave?
+Lagna nondani durustichi prakriya kay ahe?
+Lagna nondani appointment kase book karave?
+Vyavasay NOC chi prakriya kay ahe?
+Mansa dukanasathi NOC kase milvave?
+Aushad dukanasathi NOC chi prakriya kay ahe?
+Davakhana vyavasayasathi NOC kase milvave?
+Tours ani travels sathi NOC chi prakriya kay ahe?
+Pool/snooker vyavasayasathi NOC kase milvave?
+Vidyut meter sthapanesathi NOC chi prakriya kay ahe?
+Fast food vyavasayasathi NOC kase milvave?
+Hoarding/banner sathi NOC chi prakriya kay ahe?
+Mandap stall sathi NOC kase milvave?
+Rasta khodanisathi NOC chi prakriya kay ahe?
+Anna vyavasay license sathi NOC kase milvave?
+Anna nondani pramanpatrasathi NOC chi prakriya kay ahe?
+Pani kar vapar kase badalave?
+Pani connection aakar badalanyachi prakriya kay ahe?
+Pani connection malaki kase badalave?
+Navin pani connection kase milvave?
+Pani no due pramanpatrachi prakriya kay ahe?
+Pani connection punha kase jodave?
+Plumber license kase nutanikaran karave?
+Pani connection todanyachi prakriya kay ahe?
+Navin plumber license kase milvave?
+Pani bill kase bharave?
+Duplicate pani bill kase milvave?
+Vyapar license vyavasay badalachi prakriya kay ahe?
+Vyavasay kshetra kase badalave?
+Vyavasay nav badalanyachi prakriya kay ahe?
+Malak/bhagidar nav kase durust karave?
+Duplicate vyapar license kase milvave?
+Bhagidaranchi sankhya kase badalave?
+Navin vyapar license kase milvave?
+Vyapar license nutanikaranachi prakriya kay ahe?
+Vanshparamparanusar vyapar license kase hastantarit karave?
+Itar margane vyapar license kase hastantarit karave?
+Vyapar license kase radd karave?
+Malamatta kar extract chi prakriya kay ahe?
+Malamatta no due pramanpatra kase milvave?
+Namankanan malamatta kase hastantarit karave?
+Vikri/kharidine malamatta kase hastantarit karave?
+Feedback form chi prakriya kay ahe?
+Karmacharyansathi E-Office kase vaparave?
+iGOT Karmayogi kay ahe?
+
+# =============================================================================
+# COMPLEX CROSS-DOMAIN QUERIES
+# =============================================================================
+
+## English Complex Queries
+How can I get a new water connection and what are the contact details for assistance?
+What is the process for marriage registration and which desk handles it?
+How to apply for trade license and what are the municipal corporation details?
+What are the DMA services for property tax and how to contact the department?
+How to get business NOC and what are the regional office contacts?
+What is the procedure for employee promotion and which desk manages it?
+How to access e-governance services and what are the contact details?
+What are the schemes available and how to get department contact information?
+How to file RTI and what are the desk contact details?
+What is the process for tender applications and regional office contacts?
+
+## Marathi Devanagari Complex Queries
+नवीन पाणी कनेक्शन कसे मिळवावे आणि मदतीसाठी संपर्क तपशील काय आहेत?
+लग्न नोंदणीची प्रक्रिया काय आहे आणि कोणता डेस्क हाताळतो?
+व्यापार लायसन्ससाठी कसे अर्ज करावे आणि महानगरपालिकेचे तपशील काय आहेत?
+मालमत्ता करासाठी DMA सेवा काय आहेत आणि विभागाशी कसे संपर्क करावे?
+व्यवसाय NOC कसे मिळवावे आणि प्रादेशिक कार्यालयाचे संपर्क काय आहेत?
+कर्मचाऱ्यांच्या पदोन्नतीची प्रक्रिया काय आहे आणि कोणता डेस्क व्यवस्थापन करतो?
+ई-गव्हर्नन्स सेवा कसे वापरावे आणि संपर्क तपशील काय आहेत?
+कोणती योजना उपलब्ध आहेत आणि विभागीय संपर्क माहिती कसे मिळवावे?
+RTI कसे भरावे आणि डेस्क संपर्क तपशील काय आहेत?
+टेंडर अर्जाची प्रक्रिया काय आहे आणि प्रादेशिक कार्यालयाचे संपर्क काय आहेत?
+
+## Marathi Transliterated Complex Queries
+Navin pani connection kase milvave ani madatisathi sampark tashil kay ahet?
+Lagna nondanichi prakriya kay ahe ani konata desk hatalato?
+Vyapar license sathi kase arj karave ani mahangarpalikeche tashil kay ahet?
+Malamatta karasathi DMA seva kay ahet ani vibhagashi kase sampark karave?
+Vyavasay NOC kase milvave ani pradeshiya karyalayache sampark kay ahet?
+Karmacharyanchi padonnatichi prakriya kay ahe ani konata desk vyavasthapan karato?
+E-governance seva kase vaparave ani sampark tashil kay ahet?
+Konati yojana upalabdh ahet ani vibhagiya sampark mahiti kase milvave?
+RTI kase bharave ani desk sampark tashil kay ahet?
+Tender arjachi prakriya kay ahe ani pradeshiya karyalayache sampark kay ahet?
+
+# =============================================================================
+# SPECIFIC DETAIL QUERIES
+# =============================================================================
+
+## English Specific Queries
+What is the email address for desk 1 in DMA?
+What is the population of Mumbai Municipal Corporation?
+What is the foundation year of Pune Municipal Corporation?
+What are the contact details for e-Governance desk?
+What is the area of Nagpur Municipal Corporation?
+What are the different classes of municipal corporations?
+What is the email for Chief Officer Establishment?
+What are the regional office locations?
+What is the procedure for water bill payment?
+What are the steps for marriage certificate application?
+What is the process for property transfer?
+What are the requirements for trade license?
+What is the fee structure for various services?
+What are the documents required for NOC applications?
+What is the timeline for service delivery?
+What are the escalation procedures?
+What are the grievance redressal mechanisms?
+What are the online services available?
+What are the offline services available?
+What are the service level agreements?
+
+## Marathi Devanagari Specific Queries
+DMA मध्ये डेस्क 1 चा ईमेल पत्ता काय आहे?
+मुंबई महानगरपालिकेची लोकसंख्या किती आहे?
+पुणे महानगरपालिकेचे स्थापना वर्ष काय आहे?
+ई-गव्हर्नन्स डेस्कचे संपर्क तपशील काय आहेत?
+नागपूर महानगरपालिकेचे क्षेत्रफळ किती आहे?
+महानगरपालिकांच्या वेगवेगळ्या वर्ग कोणते आहेत?
+मुख्य अधिकारी स्थापनेचा ईमेल काय आहे?
+प्रादेशिक कार्यालये कोठे आहेत?
+पाणी बिल भरण्याची प्रक्रिया काय आहे?
+लग्न प्रमाणपत्र अर्जाच्या पायऱ्या काय आहेत?
+मालमत्ता हस्तांतरणाची प्रक्रिया काय आहे?
+व्यापार लायसन्ससाठी आवश्यकता काय आहेत?
+विविध सेवांसाठी फी संरचना काय आहे?
+NOC अर्जासाठी आवश्यक कागदपत्रे काय आहेत?
+सेवा वितरणासाठी वेळेचा आलेख काय आहे?
+एस्कलेशन प्रक्रिया काय आहेत?
+तक्रार निवारण यंत्रणा काय आहेत?
+ऑनलाइन सेवा कोणत्या उपलब्ध आहेत?
+ऑफलाइन सेवा कोणत्या उपलब्ध आहेत?
+सेवा स्तर करार काय आहेत?
+
+## Marathi Transliterated Specific Queries
+DMA madhye desk 1 cha email patta kay ahe?
+Mumbai mahangarpalikechi loksankhya kiti ahe?
+Pune mahangarpalikeche sthaapana varsh kay ahe?
+E-governance deskche sampark tashil kay ahet?
+Nagpur mahangarpalikeche kshetrafal kiti ahe?
+Mahangarpalikanchya vegvegalya varg konate ahet?
+Mukhya adhikari sthapanecha email kay ahe?
+Pradeshiya karyalaye kothe ahet?
+Pani bill bharnyachi prakriya kay ahe?
+Lagna pramanpatra arjachi payrya kay ahet?
+Malamatta hastantaranachi prakriya kay ahe?
+Vyapar license sathi avashyakta kay ahet?
+Vividh sevansathi fee sanrachna kay ahe?
+NOC arjasathi avashyak kagadpatre kay ahet?
+Seva vitaranasathi velacha alekh kay ahe?
+Escalation prakriya kay ahet?
+Takrar nivaran yantrana kay ahet?
+Online seva konatya upalabdh ahet?
+Offline seva konatya upalabdh ahet?
+Seva star karar kay ahet?
+
+# =============================================================================
+# END OF ROBUST TEST QUERIES
+# =============================================================================

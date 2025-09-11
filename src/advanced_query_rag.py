@@ -55,6 +55,24 @@ class AdvancedRAGQuerySystem:
     def setup_embedding_model(self) -> bool:
         """Setup E5-base-v2 embedding model for query encoding"""
         try:
+            # Configure SSL to handle corporate network certificate issues
+            import ssl
+            import urllib3
+            import os
+            
+            # Disable SSL warnings and verification for model download
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            # Set environment variables to disable SSL verification
+            os.environ['CURL_CA_BUNDLE'] = ''
+            os.environ['REQUESTS_CA_BUNDLE'] = ''
+            
+            # Create unverified SSL context
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
+            # Load the E5-base-v2 model
             self.embedding_model = SentenceTransformer('intfloat/e5-base-v2', device="cpu")
             self.model_name = "e5-base-v2"
             logger.info("Loaded E5-base-v2 embedding model (768-dim)")
@@ -62,7 +80,7 @@ class AdvancedRAGQuerySystem:
             return True
             
         except Exception as e:
-            logger.error(f"Failed to setup embedding model: {e}")
+            logger.error(f"Failed to setup E5-base-v2 embedding model: {e}")
             return False
     
     def setup_gemini(self) -> bool:
@@ -154,21 +172,43 @@ class AdvancedRAGQuerySystem:
             if any(keyword in query_lower for keyword in keywords):
                 detected_intents.append(intent)
         
-        # Extract service categories
+        # Extract service categories with better matching logic
         service_categories = {
-            "water": ["water", "connection", "bill", "supply"],
-            "property": ["property", "tax", "assessment"],
-            "trade": ["trade", "license", "business"],
-            "marriage": ["marriage", "registration", "certificate"],
-            "birth": ["birth", "certificate"],
-            "death": ["death", "certificate"],
-            "noc": ["noc", "permission", "approval"]
+            "water": ["water connection", "water bill", "water supply", "plumber", "water reconnection"],
+            "property": ["property tax", "property transfer", "property assessment", "property extract"],
+            "trade": ["trade license", "business license", "shop license", "business registration"],
+            "marriage": ["marriage registration", "marriage certificate", "wedding"],
+            "birth": ["birth certificate", "birth registration"],
+            "death": ["death certificate", "death registration"],
+            "noc": ["meat shop noc", "meat shop", "hospital noc", "electric meter noc", "food noc", "hoarding noc", "banner noc", "tours and travels noc", "pool snooker noc", "mandap stall noc", "road digging noc", "fast food noc"],
+            "approvals": ["no objection certificate", "clearance", "permission", "approval"]
         }
         
         detected_categories = []
+        
+        # First, check for specific multi-word phrases
         for category, keywords in service_categories.items():
-            if any(keyword in query_lower for keyword in keywords):
-                detected_categories.append(category)
+            for keyword in keywords:
+                if keyword in query_lower:
+                    detected_categories.append(category)
+                    break
+        
+        # If no specific matches, check for single words with context
+        if not detected_categories:
+            single_word_categories = {
+                "water": ["water"],
+                "property": ["property"],
+                "trade": ["trade", "business", "shop", "license"],
+                "marriage": ["marriage", "wedding"],
+                "birth": ["birth"],
+                "death": ["death"],
+                "noc": ["noc"],
+                "approvals": ["approval", "permission", "clearance"]
+            }
+            
+            for category, keywords in single_word_categories.items():
+                if any(keyword in query_lower for keyword in keywords):
+                    detected_categories.append(category)
         
         return {
             "intents": detected_intents if detected_intents else ["information"],
@@ -184,8 +224,23 @@ class AdvancedRAGQuerySystem:
         # Filter by service categories if detected
         if query_intent["service_categories"]:
             category_conditions = []
+            
+            # Map our categories to actual content categories in the data
+            category_mapping = {
+                "water": ["water_services"],
+                "property": ["property_services"], 
+                "trade": ["trade_license"],
+                "marriage": ["vital_records"],
+                "birth": ["vital_records"],
+                "death": ["vital_records"],
+                "noc": ["trade_license", "approvals_noc"],  # NOCs can be in both categories
+                "approvals": ["approvals_noc"]
+            }
+            
             for category in query_intent["service_categories"]:
-                category_conditions.append({"content_category": {"$eq": f"{category}_services"}})
+                mapped_categories = category_mapping.get(category, [category])
+                for mapped_category in mapped_categories:
+                    category_conditions.append({"content_category": {"$eq": mapped_category}})
             
             if len(category_conditions) == 1:
                 filters.update(category_conditions[0])
@@ -194,7 +249,8 @@ class AdvancedRAGQuerySystem:
         
         # Boost service-related content for application queries
         if "apply" in query_intent["intents"]:
-            filters["service_related"] = {"$eq": "true"}
+            if "service_related" not in filters:
+                filters["service_related"] = {"$eq": "true"}
         
         # Filter for contact information
         if query_intent["needs_contact"]:
@@ -209,6 +265,11 @@ class AdvancedRAGQuerySystem:
     def semantic_search(self, query: str, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """Perform semantic search with filtering"""
         try:
+            # Check if embedding model is available
+            if self.embedding_model is None:
+                logger.error("Embedding model not initialized")
+                return []
+            
             # Encode the query
             query_embedding = self.embedding_model.encode(query, normalize_embeddings=True).tolist()
             
@@ -338,19 +399,24 @@ class AdvancedRAGQuerySystem:
     def generate_response(self, query: str, context: str, query_intent: Dict[str, Any]) -> str:
         """Generate response using Gemini 2.0 Flash"""
         try:
+            # Check for greeting patterns first
+            greeting_patterns = ["hi", "hello", "hey", "namaste", "namaskar", "good morning", "good afternoon", "good evening"]
+            if any(pattern in query.lower() for pattern in greeting_patterns) and len(query.split()) <= 3:
+                return "🙏 Namaste! How may I assist you with municipal services today?"
+            
+            # Check if query is about services without exact match
+            if not context.strip() or len(context.strip()) < 50:
+                return self.handle_no_context_response(query)
+            
             # Build specialized prompt based on intent
             if "apply" in query_intent["intents"]:
-                system_prompt = """You are a helpful assistant for the Directorate of Municipal Administration (DMA), Maharashtra. 
-Provide detailed, step-by-step guidance for municipal services and applications. 
-Focus on practical information including required documents, procedures, fees, and contact details."""
+                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide concise, helpful guidance for municipal services. Always be polite and direct."""
             
             elif query_intent["needs_contact"]:
-                system_prompt = """You are a helpful assistant for the Directorate of Municipal Administration (DMA), Maharashtra.
-Provide accurate contact information, office addresses, phone numbers, and relevant departmental details."""
+                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide accurate contact information concisely and politely."""
             
             else:
-                system_prompt = """You are a helpful assistant for the Directorate of Municipal Administration (DMA), Maharashtra.
-Provide accurate, comprehensive information about municipal services, policies, and procedures based on the provided context."""
+                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide accurate, concise information about municipal services. Always be polite and helpful."""
             
             # Build the complete prompt
             prompt = f"""{system_prompt}
@@ -361,13 +427,14 @@ Context Information:
 User Question: {query}
 
 Instructions:
-1. Answer based ONLY on the provided context information
-2. If the context doesn't contain enough information, clearly state what's missing
-3. For service applications, include step-by-step procedures, required documents, and fees if available
-4. For contact queries, provide complete contact details including phone numbers, addresses, and office hours if available
-5. Include relevant URLs/links when provided in the context
-6. If multiple options exist, present them clearly
-7. Use a helpful, professional tone suitable for government services
+1. Be humble, respectful, and concise (maximum 3-4 sentences unless absolutely necessary)
+2. Answer based ONLY on the provided context information
+3. Use humble language: "I can help you with...", "Let me assist you...", "Here's what I found..."
+4. If information is incomplete, politely mention what's missing: "🙏 Sorry, I don't have complete information about..."
+5. For service applications, provide clear steps without excessive detail
+6. Include relevant URLs/links when available
+7. Keep responses direct and user-focused
+8. Avoid listing multiple services unless specifically asked
 
 Answer:"""
 
@@ -383,12 +450,192 @@ Answer:"""
             logger.error(f"Failed to generate response: {e}")
             return "I apologize, but I encountered an error while processing your request. Please try again."
     
-    def query(self, user_query: str) -> Dict[str, Any]:
+    def handle_no_context_response(self, query: str) -> str:
+        """Handle queries when no relevant context is found"""
+        # Try to suggest related services
+        return self.suggest_related_services(query)
+    
+    def suggest_related_services(self, query: str) -> str:
+        """Suggest related services when exact match is not found"""
+        try:
+            import json
+            services_file = os.path.join(BASE_DIR, "final_data", "services.json")
+            
+            if not os.path.exists(services_file):
+                return "🙏 Sorry, I don't have exact information for your query. Please contact DMA directly for assistance."
+            
+            with open(services_file, 'r', encoding='utf-8') as f:
+                services_data = json.load(f)
+            
+            # Extract keywords from query
+            query_lower = query.lower()
+            query_keywords = []
+            
+            # Service-related keywords mapping
+            service_keywords = {
+                "noc": ["noc", "clearance", "approval", "permission"],
+                "license": ["license", "permit", "registration", "renewal"],
+                "water": ["water", "connection", "bill", "payment", "plumber"],
+                "property": ["property", "tax", "ownership", "transfer"],
+                "marriage": ["marriage", "wedding", "registration", "certificate"],
+                "trade": ["trade", "business", "shop", "commercial"],
+                "hospital": ["hospital", "medical", "healthcare", "clinic"],
+                "electric": ["electric", "electricity", "meter", "power"],
+                "food": ["food", "restaurant", "hotel", "catering"]
+            }
+            
+            # Find matching categories
+            matching_categories = []
+            for category, keywords in service_keywords.items():
+                if any(keyword in query_lower for keyword in keywords):
+                    matching_categories.append(category)
+            
+            # Find related services
+            related_services = []
+            for service in services_data:
+                service_name = service.get('service', '').lower()
+                service_link = service.get('link', '')
+                
+                # Check if service matches any category or contains query keywords
+                if matching_categories:
+                    for category in matching_categories:
+                        if category in service_name:
+                            related_services.append({
+                                'name': service.get('service', ''),
+                                'link': service_link
+                            })
+                            break
+                else:
+                    # Fallback: check for direct keyword matches
+                    query_words = query_lower.split()
+                    if any(word in service_name for word in query_words if len(word) > 2):
+                        related_services.append({
+                            'name': service.get('service', ''),
+                            'link': service_link
+                        })
+            
+            # Remove duplicates and limit results
+            unique_services = []
+            seen_names = set()
+            for service in related_services:
+                if service['name'] not in seen_names:
+                    unique_services.append(service)
+                    seen_names.add(service['name'])
+                if len(unique_services) >= 5:  # Limit to 5 suggestions
+                    break
+            
+            if unique_services:
+                response = "🙏 Sorry, I don't have exact information for your query, but I found these related services that might help:\\n\\n"
+                for i, service in enumerate(unique_services, 1):
+                    response += f"{i}. **{service['name']}**"
+                    if service['link']:
+                        response += f" - {service['link']}"
+                    response += "\\n"
+                response += "\\nPlease let me know if any of these services match what you're looking for! 😊"
+                return response
+            else:
+                return "🙏 Sorry, I don't have exact information for your query. Please contact DMA directly for assistance or try rephrasing your question."
+                
+        except Exception as e:
+            logger.error(f"Error suggesting related services: {e}")
+            return "🙏 Sorry, I don't have exact information for your query. Please contact DMA directly for assistance."
+    
+    def preprocess_query_with_context(self, user_query: str, conversation_context: str = "") -> str:
+        """Enhanced query preprocessing that considers conversation context"""
+        processed_query = self.preprocess_query(user_query)
+        
+        if not conversation_context:
+            return processed_query
+        
+        # Check for reference words that might need context
+        reference_words = ['that', 'it', 'this', 'they', 'them', 'those', 'these', 'previous', 'above', 'earlier']
+        query_lower = user_query.lower()
+        
+        has_reference = any(word in query_lower for word in reference_words)
+        
+        # If query is very short or has reference words, enhance with context
+        if len(user_query.split()) <= 3 or has_reference:
+            # Extract relevant context from conversation
+            context_lines = conversation_context.split('\n')
+            recent_context = context_lines[-4:] if len(context_lines) > 4 else context_lines
+            
+            # Add context information to help understanding
+            enhanced_query = f"{processed_query}\n\nConversation context:\n{chr(10).join(recent_context)}"
+            return enhanced_query
+        
+        return processed_query
+    
+    def generate_response_with_context(self, query: str, context: str, query_intent: Dict[str, Any], conversation_context: str = "") -> str:
+        """Generate response using Gemini 2.0 Flash with conversation awareness"""
+        try:
+            # Check for greeting patterns first
+            greeting_patterns = ["hi", "hello", "hey", "namaste", "namaskar", "good morning", "good afternoon", "good evening"]
+            if any(pattern in query.lower() for pattern in greeting_patterns) and len(query.split()) <= 3:
+                return "🙏 Namaste! How may I assist you with municipal services today?"
+            
+            # Check if query is about services without exact match
+            if not context.strip() or len(context.strip()) < 50:
+                return self.handle_no_context_response(query)
+            
+            # Build specialized prompt based on intent
+            if "apply" in query_intent["intents"]:
+                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide concise, helpful guidance for municipal services. Always be polite and direct."""
+            
+            elif query_intent["needs_contact"]:
+                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide accurate contact information concisely and politely."""
+            
+            else:
+                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide accurate, concise information about municipal services. Always be polite and helpful."""
+            
+            # Build the complete prompt with conversation awareness
+            prompt = f"""{system_prompt}
+
+Context Information:
+{context}"""
+
+            # Add conversation context if available
+            if conversation_context:
+                prompt += f"""
+
+Previous Conversation:
+{conversation_context}"""
+
+            prompt += f"""
+
+User Question: {query}
+
+Instructions:
+1. Be humble, respectful, and concise (maximum 3-4 sentences unless absolutely necessary)
+2. Answer based ONLY on the provided context information
+3. Use humble language: "I can help you with...", "Let me assist you...", "Here's what I found..."
+4. If this is a follow-up question, refer to the previous conversation appropriately
+5. For reference words like "that", "it", "this", use the conversation context to understand what they refer to
+6. If information is incomplete, politely mention what's missing: "🙏 Sorry, I don't have complete information about..."
+7. For service applications, provide clear steps without excessive detail
+8. Include relevant URLs/links when available
+9. Keep responses direct and user-focused
+10. Avoid listing multiple services unless specifically asked
+
+Answer:"""
+
+            # Generate response
+            response = self.gemini_model.generate_content(prompt)
+            
+            if response and response.text:
+                return response.text.strip()
+            else:
+                return "I apologize, but I couldn't generate a proper response. Please try rephrasing your question."
+                
+        except Exception as e:
+            logger.error(f"Failed to generate response: {e}")
+            return "I apologize, but I encountered an error while processing your request. Please try again."
+    
+    def query(self, user_query: str, conversation_context: str = "") -> Dict[str, Any]:
         """Process complete query pipeline"""
         start_time = time.time()
         
-        # Preprocess query
-        processed_query = self.preprocess_query(user_query)
+        # Preprocess query with conversation context
+        processed_query = self.preprocess_query_with_context(user_query, conversation_context)
         query_intent = self.extract_query_intent(processed_query)
         
         logger.info(f"Processing query: '{user_query}'")
@@ -402,9 +649,11 @@ Answer:"""
         search_results = self.semantic_search(processed_query, filters)
         
         if not search_results:
+            # Try to suggest related services from services.json
+            suggested_response = self.suggest_related_services(processed_query)
             return {
                 "query": user_query,
-                "response": "I couldn't find relevant information for your query. Please try rephrasing or contact DMA directly for assistance.",
+                "response": suggested_response,
                 "sources": [],
                 "processing_time": time.time() - start_time,
                 "metadata": {
@@ -419,8 +668,8 @@ Answer:"""
         # Build context
         context = self.build_context(reranked_results)
         
-        # Generate response
-        response = self.generate_response(processed_query, context, query_intent)
+        # Generate response with conversation context
+        response = self.generate_response_with_context(processed_query, context, query_intent, conversation_context)
         
         # Prepare sources
         sources = []
