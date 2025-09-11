@@ -17,7 +17,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from advanced_query_rag import AdvancedRAGQuerySystem
 
 
-BASE_DIR = "/home/stark/Desktop/DMA_BOT"
+# Dynamic base directory - works in any environment
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 

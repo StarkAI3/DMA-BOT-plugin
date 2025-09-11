@@ -21,8 +21,8 @@ from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
 import google.generativeai as genai
 
-# Configuration
-BASE_DIR = "/home/stark/Desktop/DMA_BOT"
+# Configuration - Dynamic paths for deployment
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 DATA_DIR = os.path.join(BASE_DIR, "optimized_data")
 
@@ -72,10 +72,31 @@ class AdvancedRAGQuerySystem:
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
             
-            # Load the E5-base-v2 model
-            self.embedding_model = SentenceTransformer('intfloat/e5-base-v2', device="cpu")
+            # Load the E5-base-v2 model - prefer local path if available
+            model_path = os.getenv('EMBEDDING_MODEL_PATH')
+            if model_path and os.path.exists(model_path):
+                self.embedding_model = SentenceTransformer(model_path, device="cpu")
+                logger.info(f"Loaded E5-base-v2 embedding model from local path: {model_path}")
+            else:
+                # Check for local model in models directory
+                local_model_path = os.path.join(MODEL_DIR, "models--intfloat--e5-base-v2", "snapshots")
+                if os.path.exists(local_model_path):
+                    # Find the latest snapshot directory
+                    snapshots = [d for d in os.listdir(local_model_path) if os.path.isdir(os.path.join(local_model_path, d))]
+                    if snapshots:
+                        latest_snapshot = os.path.join(local_model_path, snapshots[0])
+                        self.embedding_model = SentenceTransformer(latest_snapshot, device="cpu")
+                        logger.info(f"Loaded E5-base-v2 embedding model from local snapshot: {latest_snapshot}")
+                    else:
+                        # Fallback to download
+                        self.embedding_model = SentenceTransformer('intfloat/e5-base-v2', device="cpu")
+                        logger.info("Downloaded E5-base-v2 embedding model (768-dim)")
+                else:
+                    # Fallback to download
+                    self.embedding_model = SentenceTransformer('intfloat/e5-base-v2', device="cpu")
+                    logger.info("Downloaded E5-base-v2 embedding model (768-dim)")
+            
             self.model_name = "e5-base-v2"
-            logger.info("Loaded E5-base-v2 embedding model (768-dim)")
             
             return True
             
