@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  dma_bot:
+    build: .
+    container_name: dma_bot
+    env_file:
+      - .env
+    ports:
+      - "0:5000"  # Random host port → container 5000
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    # If you want a stable host port instead, change to "5000:5000"
