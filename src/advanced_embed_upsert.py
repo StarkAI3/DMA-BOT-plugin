@@ -25,18 +25,18 @@ from pinecone import Pinecone
 import torch
 
 # Configuration
-BASE_DIR = "/home/stark/Desktop/DMA_BOT"
+BASE_DIR = "/home/stark/Desktop/dma backup/DMA_BOT"
 DATA_DIR = os.path.join(BASE_DIR, "optimized_data")
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 
 # Hardware optimized settings [[memory:8625932]]
 BATCH_SIZE = 8  # Reduced for 12GB RAM constraint
 MAX_MEMORY_USAGE = 0.7  # Use 70% of available RAM
-EMBEDDING_DIM = 1024  # Stella model dimension
+EMBEDDING_DIM = 768  # multilingual-e5-base model dimension
 DEVICE = "cpu"  # Intel i3 CPU optimization
 
 # Pinecone configuration
-PINECONE_INDEX_NAME = "dma-knowledge-base-v3"  # Changed to v3 to avoid old data
+PINECONE_INDEX_NAME = "dma-knowledge-base-multilingual-v1"  # New index for multilingual data
 PINECONE_METRIC = "cosine"
 PINECONE_CLOUD = "aws"
 PINECONE_REGION = "us-east-1"
@@ -81,9 +81,9 @@ class AdvancedEmbeddingPipeline:
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
             
-            self.model = SentenceTransformer('intfloat/e5-base-v2', device=DEVICE)
-            self.model_name = "e5-base-v2"
-            logger.info("Loaded E5-base-v2 embedding model (768-dim)")
+            self.model = SentenceTransformer('intfloat/multilingual-e5-base', device=DEVICE)
+            self.model_name = "multilingual-e5-base"
+            logger.info("Loaded multilingual-e5-base embedding model (768-dim) - supports 100+ languages including Marathi")
             
             # Optimize model for CPU inference
             if DEVICE == "cpu":
@@ -276,8 +276,8 @@ class AdvancedEmbeddingPipeline:
         if not chunks:
             return []
         
-        # Extract texts for embedding
-        texts = [chunk['text'] for chunk in chunks]
+        # Extract texts for embedding with passage prefix (required for multilingual-e5-base)
+        texts = [f"passage: {chunk['text']}" for chunk in chunks]
         
         # Generate embeddings
         start_time = time.time()

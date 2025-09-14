@@ -2,40 +2,30 @@ version: "3.9"
 
 services:
   dma-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    container_name: dma-backend-api
+    build: .
+    container_name: dma-backend
+    ports:
+      - "8001:8001"  # Host port 8001 -> Container port 8001
     env_file:
       - .env
-    ports:
-      - "8000:8000"  # Expose backend API on port 8000
     volumes:
       # Mount data directories for persistence
-      - ./optimized_data:/app/optimized_data:ro
-      - ./final_data:/app/final_data:ro
-      - ./models:/app/models:ro
-      # Mount logs directory for debugging
-      - ./logs:/app/logs
+      - ./final_data:/app/final_data
+      - ./optimized_data:/app/optimized_data
+      - ./models:/app/models
     environment:
-      - PYTHONPATH=/app
       - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=8000
+      - SERVER_PORT=8001
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s  # Give time for RAG system to initialize
+      start_period: 40s
     restart: unless-stopped
     networks:
       - dma-network
 
-
 networks:
   dma-network:
     driver: bridge
-
-volumes:
-  logs:
-    driver: local

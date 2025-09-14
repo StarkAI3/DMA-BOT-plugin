@@ -1,48 +1,44 @@
-# Backend-Only Dockerfile for DMA Bot API
+# Use Python 3.11 slim image
 FROM python:3.11-slim
 
-# Prevent Python from writing .pyc files and enable unbuffered logs
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     SERVER_HOST=0.0.0.0 \
-    SERVER_PORT=8000
+    SERVER_PORT=8001
 
-# Install system dependencies for ML libraries and web scraping
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
     curl \
     libxml2-dev \
     libxslt1-dev \
-    libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set workdir
+# Set working directory
 WORKDIR /app
 
-# Copy dependency file first to leverage Docker layer caching
-COPY requirements.txt ./
+# Copy requirements first for better caching
+COPY requirements.txt .
 
-# Install Python dependencies with optimizations
+# Install Python dependencies
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install -r requirements.txt
 
-# Copy only backend source code and necessary data
-COPY src/ ./src/
-COPY models/ ./models/
-COPY optimized_data/ ./optimized_data/
-COPY final_data/ ./final_data/
+# Copy application code
+COPY . .
 
 # Create necessary directories
-RUN mkdir -p /app/logs
+RUN mkdir -p /app/models /app/optimized_data /app/final_data
 
-# Expose the API port
-EXPOSE 8000
+# Expose port 8001
+EXPOSE 8001
 
-# Health check for API endpoints
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD curl -fsS http://127.0.0.1:${SERVER_PORT}/health || exit 1
+    CMD curl -f http://localhost:8001/health || exit 1
 
-# Start the FastAPI backend server
-CMD ["uvicorn", "src.server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+# Run the FastAPI application
+CMD ["uvicorn", "src.server:app", "--host", "0.0.0.0", "--port", "8001"]

@@ -27,7 +27,7 @@ MODEL_DIR = os.path.join(BASE_DIR, "models")
 DATA_DIR = os.path.join(BASE_DIR, "optimized_data")
 
 # Pinecone configuration
-PINECONE_INDEX_NAME = "dma-knowledge-base-v3"
+PINECONE_INDEX_NAME = "dma-knowledge-base-multilingual-v1"
 
 # Query optimization parameters
 TOP_K_RETRIEVAL = 20  # Retrieve more candidates for reranking
@@ -47,6 +47,12 @@ class AdvancedRAGQuerySystem:
         self.pc = None
         self.index = None
         self.model_name = None
+        
+        # Initialize embedding model
+        self.setup_embedding_model()
+        
+        # Initialize Pinecone
+        self.setup_pinecone()
         
         # Initialize Gemini [[memory:8625932]]
         self.gemini_model = None
@@ -72,31 +78,11 @@ class AdvancedRAGQuerySystem:
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
             
-            # Load the E5-base-v2 model - prefer local path if available
-            model_path = os.getenv('EMBEDDING_MODEL_PATH')
-            if model_path and os.path.exists(model_path):
-                self.embedding_model = SentenceTransformer(model_path, device="cpu")
-                logger.info(f"Loaded E5-base-v2 embedding model from local path: {model_path}")
-            else:
-                # Check for local model in models directory
-                local_model_path = os.path.join(MODEL_DIR, "models--intfloat--e5-base-v2", "snapshots")
-                if os.path.exists(local_model_path):
-                    # Find the latest snapshot directory
-                    snapshots = [d for d in os.listdir(local_model_path) if os.path.isdir(os.path.join(local_model_path, d))]
-                    if snapshots:
-                        latest_snapshot = os.path.join(local_model_path, snapshots[0])
-                        self.embedding_model = SentenceTransformer(latest_snapshot, device="cpu")
-                        logger.info(f"Loaded E5-base-v2 embedding model from local snapshot: {latest_snapshot}")
-                    else:
-                        # Fallback to download
-                        self.embedding_model = SentenceTransformer('intfloat/e5-base-v2', device="cpu")
-                        logger.info("Downloaded E5-base-v2 embedding model (768-dim)")
-                else:
-                    # Fallback to download
-                    self.embedding_model = SentenceTransformer('intfloat/e5-base-v2', device="cpu")
-                    logger.info("Downloaded E5-base-v2 embedding model (768-dim)")
+            # Force use of multilingual-e5-base model for multilingual support
+            self.embedding_model = SentenceTransformer('intfloat/multilingual-e5-base', device="cpu")
+            logger.info("Loaded multilingual-e5-base embedding model (768-dim) - supports 100+ languages including Marathi")
             
-            self.model_name = "e5-base-v2"
+            self.model_name = "multilingual-e5-base"
             
             return True
             
@@ -291,8 +277,9 @@ class AdvancedRAGQuerySystem:
                 logger.error("Embedding model not initialized")
                 return []
             
-            # Encode the query
-            query_embedding = self.embedding_model.encode(query, normalize_embeddings=True).tolist()
+            # Encode the query with query prefix (required for multilingual-e5-base)
+            query_with_prefix = f"query: {query}"
+            query_embedding = self.embedding_model.encode(query_with_prefix, normalize_embeddings=True).tolist()
             
             # Perform vector search
             search_kwargs = {
@@ -598,8 +585,24 @@ Answer:"""
             if not context.strip() or len(context.strip()) < 50:
                 return self.handle_no_context_response(query)
             
-            # Build specialized prompt based on intent
-            if "apply" in query_intent["intents"]:
+            # Build specialized prompt based on intent and query type
+            query_lower = query.lower()
+            
+            # Special handling for news/announcements queries
+            if any(keyword in query_lower for keyword in ["news", "announcement", "update", "latest"]):
+                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 When users ask for news, announcements, or updates, provide BOTH News and Announcements links:
+
+For English users, provide:
+- News: https://mahadma.maharashtra.gov.in/en/news-2/ 
+- Announcements: https://mahadma.maharashtra.gov.in/en/category/announcements/
+
+For Marathi users, also include:
+- Marathi News: https://mahadma.maharashtra.gov.in/news/ 
+- Marathi Announcements: https://mahadma.maharashtra.gov.in/category/announcements-mr/
+
+Always mention both pages as they contain different types of information. Be helpful and comprehensive."""
+            
+            elif "apply" in query_intent["intents"]:
                 system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide concise, helpful guidance for municipal services. Always be polite and direct."""
             
             elif query_intent["needs_contact"]:

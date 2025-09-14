@@ -28,10 +28,12 @@ except LookupError:
     nltk.download('punkt_tab')
 
 # Configuration
-BASE_DIR = "/home/stark/Desktop/DMA_BOT"
+BASE_DIR = "/home/stark/Desktop/dma backup/DMA_BOT"
 FINAL_DATA_DIR = os.path.join(BASE_DIR, "final_data")
 NORMAL_DATA_DIR = os.path.join(FINAL_DATA_DIR, "normal data")
+MARATHI_DATA_DIR = os.path.join(FINAL_DATA_DIR, "marathi_normal_data")
 TABULAR_DATA_DIR = os.path.join(FINAL_DATA_DIR, "tabular data")
+MARATHI_TABULAR_DATA_DIR = os.path.join(FINAL_DATA_DIR, "marathi_tabular_data")
 SERVICES_FILE = os.path.join(FINAL_DATA_DIR, "services.json")
 OUTPUT_DIR = os.path.join(BASE_DIR, "optimized_data")
 
@@ -77,8 +79,10 @@ class AdvancedPreprocessor:
         self.stats = {
             'total_chunks': 0,
             'web_content_chunks': 0,
+            'marathi_content_chunks': 0,
             'service_chunks': 0,
             'tabular_chunks': 0,
+            'marathi_tabular_chunks': 0,
             'high_quality_chunks': 0
         }
     
@@ -106,8 +110,8 @@ class AdvancedPreprocessor:
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
             
-            self.embedding_model = SentenceTransformer('intfloat/e5-base-v2', device='cpu')
-            logger.info("Loaded E5-base-v2 embedding model (768-dim)")
+            self.embedding_model = SentenceTransformer('intfloat/multilingual-e5-base', device='cpu')
+            logger.info("Loaded multilingual-e5-base embedding model (768-dim) - supports 100+ languages including Marathi")
         except Exception as e:
             logger.error(f"Failed to load E5-base-v2 embedding model: {e}")
             self.embedding_model = None
@@ -378,6 +382,134 @@ class AdvancedPreprocessor:
         logger.info(f"Processed {len(records)} web content chunks")
         return records
     
+    def process_marathi_content(self) -> List[Dict[str, Any]]:
+        """Process Marathi normal web content files with advanced chunking"""
+        logger.info("Processing Marathi normal web content files...")
+        records = []
+        
+        # Check if Marathi normal data directory exists
+        if not os.path.exists(MARATHI_DATA_DIR):
+            logger.warning(f"Marathi normal data directory not found: {MARATHI_DATA_DIR}")
+            return records
+        
+        for file_path in sorted(glob.glob(os.path.join(MARATHI_DATA_DIR, "*.json"))):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                if not isinstance(data, dict):
+                    continue
+                
+                file_info = data.get("file_info", {})
+                raw_data = data.get("raw_data", {})
+                
+                url = raw_data.get("url", "")
+                title = raw_data.get("title", file_info.get("filename", ""))
+                content = self.clean_text(raw_data.get("content", ""))
+                links = raw_data.get("links", [])
+                
+                if not content:
+                    continue
+                
+                # Extract section hierarchy
+                sections = self.extract_sections(content)
+                
+                # Semantic chunking
+                chunks = self.semantic_split(content)
+                
+                for idx, chunk in enumerate(chunks):
+                    if len(chunk) < MIN_CHUNK_SIZE:
+                        continue
+                    
+                    entities = self.extract_entities(chunk)
+                    keywords = self.extract_keywords(chunk)
+                    
+                    # Determine content category
+                    category = self.categorize_content(chunk, title, url)
+                    
+                    metadata = ChunkMetadata(
+                        data_type="marathi_content",
+                        content_category=category,
+                        source_url=url,
+                        title=title,
+                        language=self.detect_language(chunk),  # Will detect "mr" for Marathi
+                        chunk_type="semantic_content",
+                        semantic_keywords=keywords,
+                        file_source=os.path.basename(file_path),
+                        section_hierarchy=sections,
+                        entity_types=list(entities.keys()),
+                        importance_score=0.0,  # Will be calculated
+                        has_structured_data=bool(links),
+                        date_mentioned=entities['dates'][0] if entities['dates'] else None,
+                        location_mentioned=entities['locations'][0] if entities['locations'] else None,
+                        department_mentioned=entities['departments'][0] if entities['departments'] else None,
+                        service_related=bool(entities['services'])
+                    )
+                    
+                    metadata.importance_score = self.calculate_importance_score(chunk, asdict(metadata))
+                    
+                    record = {
+                        "id": self.hash_id(file_path, "marathi_content", str(idx)),
+                        "text": chunk,
+                        "metadata": asdict(metadata)
+                    }
+                    
+                    records.append(record)
+                    self.stats['marathi_content_chunks'] += 1
+                    
+                    if metadata.importance_score > 0.7:
+                        self.stats['high_quality_chunks'] += 1
+                
+                # Process links separately for comprehensive coverage
+                if links:
+                    self.process_marathi_links(links, file_path, title, url, records)
+                
+            except Exception as e:
+                logger.error(f"Error processing {file_path}: {e}")
+                continue
+        
+        logger.info(f"Processed {len(records)} Marathi content chunks")
+        return records
+    
+    def process_marathi_links(self, links: List[Dict], file_path: str, title: str, url: str, records: List[Dict]):
+        """Process Marathi links as separate knowledge items"""
+        link_texts = []
+        for link in links:
+            text = link.get("text", "")
+            link_url = link.get("url", "")
+            if text and link_url:
+                link_texts.append(f"{text}: {link_url}")
+        
+        if link_texts:
+            links_content = "\n".join(link_texts)
+            
+            metadata = ChunkMetadata(
+                data_type="marathi_content",
+                content_category="navigation_links",
+                source_url=url,
+                title=title,
+                language="mr",  # Marathi language
+                chunk_type="links_collection",
+                semantic_keywords=self.extract_keywords(links_content),
+                file_source=os.path.basename(file_path),
+                section_hierarchy=["links"],
+                entity_types=["services"],
+                importance_score=0.6,
+                has_structured_data=True,
+                date_mentioned=None,
+                location_mentioned=None,
+                department_mentioned=None,
+                service_related=True
+            )
+            
+            record = {
+                "id": self.hash_id(file_path, "marathi_links"),
+                "text": links_content,
+                "metadata": asdict(metadata)
+            }
+            
+            records.append(record)
+    
     def process_links(self, links: List[Dict], file_path: str, title: str, url: str, records: List[Dict]):
         """Process links as separate knowledge items"""
         link_texts = []
@@ -526,6 +658,74 @@ class AdvancedPreprocessor:
         logger.info(f"Processed {len(records)} tabular data chunks")
         return records
     
+    def process_marathi_tabular_data(self) -> List[Dict[str, Any]]:
+        """Process Marathi tabular data with enhanced structure preservation"""
+        logger.info("Processing Marathi tabular data...")
+        records = []
+        
+        # Check if Marathi tabular data directory exists
+        if not os.path.exists(MARATHI_TABULAR_DATA_DIR):
+            logger.warning(f"Marathi tabular data directory not found: {MARATHI_TABULAR_DATA_DIR}")
+            return records
+        
+        for file_path in sorted(glob.glob(os.path.join(MARATHI_TABULAR_DATA_DIR, "*.json"))):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                # Handle the data structure from marathi tabular scraper
+                if isinstance(data, dict) and 'data' in data:
+                    tabular_data = data.get('data', [])
+                    url = data.get('url', '')
+                    title = os.path.basename(file_path).replace('.json', '')
+                    
+                    # Process each row
+                    for idx, row in enumerate(tabular_data):
+                        if isinstance(row, dict):
+                            row_text = self.format_table_row(row)
+                            
+                            if len(row_text) < MIN_CHUNK_SIZE:
+                                continue
+                            
+                            entities = self.extract_entities(row_text)
+                            keywords = self.extract_keywords(row_text)
+                            
+                            metadata = ChunkMetadata(
+                                data_type="marathi_tabular_data",
+                                content_category="structured_data",
+                                source_url=url,
+                                title=title,
+                                language="mr",  # Marathi language
+                                chunk_type="table_row",
+                                semantic_keywords=keywords,
+                                file_source=os.path.basename(file_path),
+                                section_hierarchy=["marathi_tabular_data"],
+                                entity_types=list(entities.keys()),
+                                importance_score=0.7,  # Tables are generally important
+                                has_structured_data=True,
+                                date_mentioned=entities['dates'][0] if entities['dates'] else None,
+                                location_mentioned=entities['locations'][0] if entities['locations'] else None,
+                                department_mentioned=entities['departments'][0] if entities['departments'] else None,
+                                service_related=bool(entities['services'])
+                            )
+                            
+                            record = {
+                                "id": self.hash_id(file_path, "marathi_row", str(idx)),
+                                "text": row_text,
+                                "metadata": asdict(metadata)
+                            }
+                            
+                            records.append(record)
+                            self.stats['marathi_tabular_chunks'] += 1
+                            self.stats['high_quality_chunks'] += 1
+                
+            except Exception as e:
+                logger.error(f"Error processing {file_path}: {e}")
+                continue
+        
+        logger.info(f"Processed {len(records)} Marathi tabular data chunks")
+        return records
+    
     def format_table_row(self, row: Dict[str, Any]) -> str:
         """Format table row for optimal retrieval"""
         parts = []
@@ -668,17 +868,21 @@ class AdvancedPreprocessor:
         
         # Process all data sources
         web_records = self.process_web_content()
+        marathi_records = self.process_marathi_content()
         tabular_records = self.process_tabular_data()
+        marathi_tabular_records = self.process_marathi_tabular_data()
         service_records = self.process_services()
         
         # Combine all records
-        all_records = web_records + tabular_records + service_records
+        all_records = web_records + marathi_records + tabular_records + marathi_tabular_records + service_records
         self.stats['total_chunks'] = len(all_records)
         
         # Write output files
         output_files = {
             'web_content_chunks.jsonl': web_records,
+            'marathi_content_chunks.jsonl': marathi_records,
             'tabular_data_chunks.jsonl': tabular_records,
+            'marathi_tabular_chunks.jsonl': marathi_tabular_records,
             'service_chunks.jsonl': service_records,
             'all_chunks.jsonl': all_records
         }
