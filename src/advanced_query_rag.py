@@ -30,9 +30,9 @@ DATA_DIR = os.path.join(BASE_DIR, "optimized_data")
 PINECONE_INDEX_NAME = "dma-knowledge-base-multilingual-v1"
 
 # Query optimization parameters
-TOP_K_RETRIEVAL = 20  # Retrieve more candidates for reranking
+TOP_K_RETRIEVAL = 50  # Retrieve more candidates for reranking (increased for better article retrieval)
 FINAL_CONTEXT_LIMIT = 8  # Final number of chunks to use
-MIN_SIMILARITY_THRESHOLD = 0.3  # Minimum similarity for relevance
+MIN_SIMILARITY_THRESHOLD = 0.3  # Minimum similarity for relevance (restored to original)
 CONTEXT_WINDOW_LIMIT = 6000  # Characters limit for Gemini context
 
 # Setup logging
@@ -158,6 +158,15 @@ class AdvancedRAGQuerySystem:
             if abbr in query_lower:
                 query = re.sub(rf'\b{re.escape(abbr)}\b', expansion, query, flags=re.IGNORECASE)
         
+        # Enhanced processing for Article queries
+        article_pattern = r'\barticle\s+(\d+)\b'
+        article_match = re.search(article_pattern, query_lower)
+        if article_match:
+            article_num = article_match.group(1)
+            # For article queries, also include the specific article format used in the text
+            enhanced_query = f"{query} Article {article_num}:"
+            return enhanced_query
+        
         return query
     
     def extract_query_intent(self, query: str) -> Dict[str, Any]:
@@ -166,12 +175,13 @@ class AdvancedRAGQuerySystem:
         
         intent_keywords = {
             "apply": ["apply", "application", "form", "submit", "register"],
-            "information": ["what", "how", "where", "when", "info", "details"],
+            "information": ["what", "how", "where", "when", "info", "details", "says", "do", "does"],
             "contact": ["contact", "phone", "email", "address", "office"],
             "procedure": ["procedure", "process", "steps", "how to"],
             "status": ["status", "track", "check", "progress"],
             "fee": ["fee", "cost", "charges", "payment", "amount"],
-            "documents": ["documents", "papers", "requirements", "needed"]
+            "documents": ["documents", "papers", "requirements", "needed"],
+            "article": ["article", "constitution", "law", "legal"]
         }
         
         detected_intents = []
@@ -221,12 +231,18 @@ class AdvancedRAGQuerySystem:
             "intents": detected_intents if detected_intents else ["information"],
             "service_categories": detected_categories,
             "is_procedural": any(word in query_lower for word in ["how", "procedure", "steps", "process"]),
-            "needs_contact": any(word in query_lower for word in ["contact", "phone", "office", "address"])
+            "needs_contact": any(word in query_lower for word in ["contact", "phone", "office", "address"]),
+            "is_article_query": "article" in detected_intents or bool(re.search(r'\barticle\s+\d+\b', query_lower))
         }
     
     def build_search_filters(self, query_intent: Dict[str, Any]) -> Dict[str, Any]:
         """Build metadata filters for targeted search"""
         filters = {}
+        
+        # For article queries, don't apply restrictive filters
+        if query_intent.get("is_article_query", False):
+            # Only apply basic language filter if needed, but keep search broad
+            return {}
         
         # Filter by service categories if detected
         if query_intent["service_categories"]:
@@ -254,10 +270,8 @@ class AdvancedRAGQuerySystem:
             else:
                 filters["$or"] = category_conditions
         
-        # Boost service-related content for application queries
-        if "apply" in query_intent["intents"]:
-            if "service_related" not in filters:
-                filters["service_related"] = {"$eq": "true"}
+        # Boost service-related content for application queries, but don't make it mandatory
+        # Removed the mandatory service_related filter as it was excluding articles
         
         # Filter for contact information
         if query_intent["needs_contact"]:
@@ -329,6 +343,15 @@ class AdvancedRAGQuerySystem:
             keyword_overlap = len(query_words.intersection(text_words)) / len(query_words)
             keyword_boost = keyword_overlap * 0.3
             
+            # Special boost for article number matches
+            article_boost = 0.0
+            article_pattern = r'\barticle\s+(\d+)\b'
+            query_article_match = re.search(article_pattern, query_lower)
+            if query_article_match:
+                article_num = query_article_match.group(1)
+                if f"article {article_num}" in text.lower():
+                    article_boost = 0.5  # Strong boost for exact article matches
+            
             # Boost based on content type preferences
             content_type_boost = 0.0
             content_category = metadata.get("content_category", "")
@@ -354,7 +377,7 @@ class AdvancedRAGQuerySystem:
             elif text_length > 1000:
                 length_penalty = -0.1
             
-            final_score = base_score + importance_boost + keyword_boost + content_type_boost + length_penalty
+            final_score = base_score + importance_boost + keyword_boost + content_type_boost + length_penalty + article_boost
             return min(1.0, max(0.0, final_score))
         
         # Calculate relevance scores and sort
@@ -611,10 +634,35 @@ Always mention both pages as they contain different types of information. Be hel
             else:
                 system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide accurate, concise information about municipal services. Always be polite and helpful."""
             
+            # Quick statistics check for Maharashtra data (bypass vector search for common queries)
+            if self.is_statistics_query(query):
+                quick_response = self.get_quick_statistics_response(query)
+                if quick_response:
+                    return quick_response
+            
             # Build the complete prompt with conversation awareness
             prompt = f"""{system_prompt}
 
-Context Information:
+MAHARASHTRA URBAN LOCAL BODIES STATISTICS (Always available for quick reference):
+🏛️ Total Municipal Corporations: 29
+🏢 Total Municipal Councils: 248 (Class A: 15, Class B: 77, Class C: 156)
+🏡 Total Nagar Panchayats: 147
+📊 Total Urban Local Bodies: 424
+🏗️ Total Cantonment Boards: 7
+
+महाराष्ट्र नागरी स्थानिक स्वराज्य संस्था आकडेवारी:
+🏛️ एकूण महानगरपालिका: 29
+🏢 एकूण नगरपरिषद: 248 (अ वर्ग: 15, ब वर्ग: 77, क वर्ग: 156)
+🏡 एकूण नगरपंचायत: 147
+📊 एकूण नागरी स्थानिक स्वराज्य संस्था: 424
+🏗️ एकूण कट्टक मंडळ: 7
+
+🆕 Newly Formed Urban Local Bodies:
+1. Fursungi-Devachi Uruli Nagar Parishad (Pune District, Class B)
+2. Pimpalgaon Baswant Nagar Parishad (Nashik District, Class B)  
+3. Yerkheda (Nagpur District, Nagar Panchayat)
+
+Context Information from Database:
 {context}"""
 
             # Add conversation context if available
@@ -658,6 +706,82 @@ Provide a direct, plain text answer:"""
             logger.error(f"Failed to generate response: {e}")
             return "I apologize, but I encountered an error while processing your request. Please try again."
     
+    def is_statistics_query(self, query: str) -> bool:
+        """Check if query is asking for basic Maharashtra statistics that can be answered quickly"""
+        query_lower = query.lower()
+        
+        statistics_keywords = [
+            "total", "how many", "number of", "count", "statistics", "data",
+            "municipal corporation", "municipal council", "nagar panchayat", 
+            "urban local bodies", "cantonment board",
+            "एकूण", "किती", "संख्या", "आकडेवारी", "महानगरपालिका", 
+            "नगरपरिषद", "नगरपंचायत", "कट्टक मंडळ", "newly formed"
+        ]
+        
+        return any(keyword in query_lower for keyword in statistics_keywords)
+    
+    def get_quick_statistics_response(self, query: str) -> str:
+        """Provide quick response for Maharashtra statistics without vector search"""
+        query_lower = query.lower()
+        
+        # Detect language
+        is_marathi = any("\u0900" <= ch <= "\u097F" for ch in query)
+        
+        if "municipal corporation" in query_lower or "महानगरपालिका" in query_lower:
+            if is_marathi:
+                return "🏛️ महाराष्ट्रात एकूण 29 महानगरपालिका आहेत."
+            else:
+                return "🏛️ Maharashtra has a total of 29 Municipal Corporations."
+        
+        elif "municipal council" in query_lower or "नगरपरिषद" in query_lower:
+            if is_marathi:
+                return "🏢 महाराष्ट्रात एकूण 248 नगरपरिषद आहेत: अ वर्ग - 15, ब वर्ग - 77, क वर्ग - 156."
+            else:
+                return "🏢 Maharashtra has a total of 248 Municipal Councils: Class A - 15, Class B - 77, Class C - 156."
+        
+        elif "nagar panchayat" in query_lower or "नगरपंचायत" in query_lower:
+            if is_marathi:
+                return "🏡 महाराष्ट्रात एकूण 147 नगरपंचायत आहेत."
+            else:
+                return "🏡 Maharashtra has a total of 147 Nagar Panchayats."
+        
+        elif "urban local bodies" in query_lower or "नागरी स्थानिक स्वराज्य संस्था" in query_lower:
+            if is_marathi:
+                return "📊 महाराष्ट्रात एकूण 424 नागरी स्थानिक स्वराज्य संस्था आहेत."
+            else:
+                return "📊 Maharashtra has a total of 424 Urban Local Bodies."
+        
+        elif "cantonment" in query_lower or "कट्टक मंडळ" in query_lower:
+            if is_marathi:
+                return "🏗️ महाराष्ट्रात एकूण 7 कट्टक मंडळ आहेत."
+            else:
+                return "🏗️ Maharashtra has a total of 7 Cantonment Boards."
+        
+        elif "newly formed" in query_lower or "नवीन" in query_lower:
+            if is_marathi:
+                return "🆕 नव्याने स्थापन झालेल्या संस्था: 1) फुरसुंगी-देवाची उरुळी नगरपरिषद (पुणे, ब वर्ग), 2) पिंपळगाव बसवंत नगरपरिषद (नाशिक, ब वर्ग), 3) येरखेडा (नागपूर, नगरपंचायत)."
+            else:
+                return "🆕 Newly formed Urban Local Bodies: 1) Fursungi-Devachi Uruli Nagar Parishad (Pune District, Class B), 2) Pimpalgaon Baswant Nagar Parishad (Nashik District, Class B), 3) Yerkheda (Nagpur District, Nagar Panchayat)."
+        
+        elif "total" in query_lower or "एकूण" in query_lower:
+            if is_marathi:
+                return """📊 महाराष्ट्र नागरी स्थानिक स्वराज्य संस्था आकडेवारी:
+🏛️ एकूण महानगरपालिका: 29
+🏢 एकूण नगरपरिषद: 248 (अ वर्ग: 15, ब वर्ग: 77, क वर्ग: 156)
+🏡 एकूण नगरपंचायत: 147
+📊 एकूण नागरी स्थानिक स्वराज्य संस्था: 424
+🏗️ एकूण कट्टक मंडळ: 7"""
+            else:
+                return """📊 Maharashtra Urban Local Bodies Statistics:
+🏛️ Total Municipal Corporations: 29
+🏢 Total Municipal Councils: 248 (Class A: 15, Class B: 77, Class C: 156)
+🏡 Total Nagar Panchayats: 147
+📊 Total Urban Local Bodies: 424
+🏗️ Total Cantonment Boards: 7"""
+        
+        # If no specific match, return None to continue with normal processing
+        return None
+
     def clean_response_format(self, response_text: str) -> str:
         """Clean response text to remove JSON formatting and code blocks"""
         try:
