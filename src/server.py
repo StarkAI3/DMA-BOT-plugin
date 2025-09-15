@@ -1,5 +1,6 @@
 import os
 import uuid
+import re
 from contextlib import asynccontextmanager
 from typing import Any, Dict, Optional, List
 from datetime import datetime, timedelta
@@ -63,6 +64,38 @@ class ConversationHistory:
             context_parts.append(f"{role}: {msg['content']}")
         
         return "\n".join(context_parts)
+
+def clean_response_format(response_text: str) -> str:
+    """Clean response text to remove JSON formatting and code blocks"""
+    try:
+        import json
+        
+        # Remove markdown code blocks (```json, ```, etc.)
+        response_text = re.sub(r'```[\w]*\n?', '', response_text)
+        response_text = re.sub(r'```', '', response_text)
+        
+        # Try to extract content from JSON structure if present
+        if response_text.strip().startswith('{') and response_text.strip().endswith('}'):
+            try:
+                parsed = json.loads(response_text)
+                if isinstance(parsed, dict) and 'answer' in parsed:
+                    return parsed['answer']
+            except:
+                pass
+        
+        # Remove any remaining JSON-like patterns
+        response_text = re.sub(r'^\s*{\s*"?\w+"?\s*:\s*"?', '', response_text)
+        response_text = re.sub(r'"\s*}\s*$', '', response_text)
+        
+        # Clean up extra whitespace
+        response_text = re.sub(r'\n+', ' ', response_text)
+        response_text = re.sub(r'\s+', ' ', response_text)
+        
+        return response_text.strip()
+        
+    except Exception as e:
+        print(f"Warning: Error cleaning response format: {e}")
+        return response_text
 
 def get_or_create_session(session_id: Optional[str] = None) -> tuple[str, ConversationHistory]:
     """Get existing session or create new one"""
@@ -162,6 +195,10 @@ def api_chat(message: ChatMessage) -> Dict[str, Any]:
         
         # Add assistant response to conversation history
         response_text = result.get("response", "")
+        
+        # Clean response format to remove JSON formatting issues
+        response_text = clean_response_format(response_text)
+        
         conversation.add_message("assistant", response_text, {"sources": result.get("sources", [])})
         
         # Normalize sources for the frontend (array of {url, title})

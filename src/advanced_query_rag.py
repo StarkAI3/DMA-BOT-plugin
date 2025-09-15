@@ -639,20 +639,55 @@ Instructions:
 8. Include relevant URLs/links when available
 9. Keep responses direct and user-focused
 10. Avoid listing multiple services unless specifically asked
+11. CRITICAL: Respond with PLAIN TEXT ONLY. DO NOT use JSON format, markdown code blocks, or any special formatting.
+12. CRITICAL: Do not wrap your response in ```json``` or any code blocks.
 
-Answer:"""
+Provide a direct, plain text answer:"""
 
             # Generate response
             response = self.gemini_model.generate_content(prompt)
             
             if response and response.text:
-                return response.text.strip()
+                # Clean up the response to remove any JSON formatting
+                clean_response = self.clean_response_format(response.text.strip())
+                return clean_response
             else:
                 return "I apologize, but I couldn't generate a proper response. Please try rephrasing your question."
                 
         except Exception as e:
             logger.error(f"Failed to generate response: {e}")
             return "I apologize, but I encountered an error while processing your request. Please try again."
+    
+    def clean_response_format(self, response_text: str) -> str:
+        """Clean response text to remove JSON formatting and code blocks"""
+        try:
+            # Remove markdown code blocks (```json, ```, etc.)
+            response_text = re.sub(r'```[\w]*\n?', '', response_text)
+            response_text = re.sub(r'```', '', response_text)
+            
+            # Try to extract content from JSON structure if present
+            if response_text.strip().startswith('{') and response_text.strip().endswith('}'):
+                try:
+                    import json
+                    parsed = json.loads(response_text)
+                    if isinstance(parsed, dict) and 'answer' in parsed:
+                        return parsed['answer']
+                except:
+                    pass
+            
+            # Remove any remaining JSON-like patterns
+            response_text = re.sub(r'^\s*{\s*"?\w+"?\s*:\s*"?', '', response_text)
+            response_text = re.sub(r'"\s*}\s*$', '', response_text)
+            
+            # Clean up extra whitespace
+            response_text = re.sub(r'\n+', ' ', response_text)
+            response_text = re.sub(r'\s+', ' ', response_text)
+            
+            return response_text.strip()
+            
+        except Exception as e:
+            logger.warning(f"Error cleaning response format: {e}")
+            return response_text
     
     def query(self, user_query: str, conversation_context: str = "") -> Dict[str, Any]:
         """Process complete query pipeline"""
