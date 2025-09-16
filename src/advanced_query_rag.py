@@ -31,7 +31,7 @@ PINECONE_INDEX_NAME = "dma-knowledge-base-multilingual-v1"
 
 # Query optimization parameters
 TOP_K_RETRIEVAL = 50  # Retrieve more candidates for reranking (increased for better article retrieval)
-FINAL_CONTEXT_LIMIT = 8  # Final number of chunks to use
+FINAL_CONTEXT_LIMIT = 10  # Final number of chunks to use
 MIN_SIMILARITY_THRESHOLD = 0.3  # Minimum similarity for relevance (restored to original)
 CONTEXT_WINDOW_LIMIT = 6000  # Characters limit for Gemini context
 
@@ -169,6 +169,16 @@ class AdvancedRAGQuerySystem:
         
         return query
     
+    def is_general_service_query(self, query: str) -> bool:
+        """Check if query is asking about services in general"""
+        query_lower = query.lower()
+        general_service_keywords = [
+            "services", "service", "सेवा", "सेवाएं", "apply", "application", 
+            "form", "online services", "municipal services", "government services",
+            "how to apply", "where to apply", "license", "certificate", "registration"
+        ]
+        return any(keyword in query_lower for keyword in general_service_keywords)
+    
     def extract_query_intent(self, query: str) -> Dict[str, Any]:
         """Extract intent and entities from query"""
         query_lower = query.lower()
@@ -181,7 +191,8 @@ class AdvancedRAGQuerySystem:
             "status": ["status", "track", "check", "progress"],
             "fee": ["fee", "cost", "charges", "payment", "amount"],
             "documents": ["documents", "papers", "requirements", "needed"],
-            "article": ["article", "constitution", "law", "legal"]
+            "article": ["article", "constitution", "law", "legal"],
+            "statistics": ["how many", "total", "count", "number of", "statistics", "data", "कितने", "एकूण", "संख्या"]
         }
         
         detected_intents = []
@@ -235,6 +246,66 @@ class AdvancedRAGQuerySystem:
             "is_article_query": "article" in detected_intents or bool(re.search(r'\barticle\s+\d+\b', query_lower))
         }
     
+    def handle_service_query(self, user_query: str, query_intent: Dict[str, Any], start_time: float) -> Dict[str, Any]:
+        """Handle service-related queries with unified link"""
+        logger.info(f"Handling service query: {user_query}")
+        
+        # Create a unified response for all services
+        response = self.generate_unified_service_response(user_query, query_intent)
+        
+        return {
+            "query": user_query,
+            "response": response,
+            "sources": [{"url": "https://mahaulb.in/MahaULB/index", "title": "Maharashtra ULB Services Portal"}],
+            "processing_time": time.time() - start_time,
+            "metadata": {
+                "intent": query_intent,
+                "results_found": 1,
+                "service_redirect": True
+            }
+        }
+    
+    def generate_unified_service_response(self, query: str, query_intent: Dict[str, Any]) -> str:
+        """Generate a unified response for service queries"""
+        query_lower = query.lower()
+        
+        # Detect language preference
+        is_marathi = any(char in query for char in "अआइईउऊऋऌएऐओऔकखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसह")
+        
+        if is_marathi:
+            base_response = "महाराष्ट्र शहरी स्थानिक स्वराज्य संस्थांच्या सर्व सेवांसाठी कृपया खालील लिंकवर भेट द्या:"
+            portal_text = "Maharashtra ULB सेवा पोर्टल"
+            help_text = "येथे तुम्हाला सर्व नगरपालिका सेवा, अर्ज प्रक्रिया, आणि आवश्यक माहिती मिळेल."
+        else:
+            base_response = "For all Maharashtra Urban Local Body services, please visit:"
+            portal_text = "Maharashtra ULB Services Portal"
+            help_text = "Here you'll find all municipal services, application processes, and required information."
+        
+        response = f"{base_response}\n\n🔗 **{portal_text}**: https://mahaulb.in/MahaULB/index\n\n{help_text}"
+        
+        # Add specific guidance based on detected service categories
+        if query_intent["service_categories"]:
+            categories = query_intent["service_categories"]
+            if "water" in categories:
+                if is_marathi:
+                    response += "\n\n💧 पाणी कनेक्शन, बिल पेमेंट आणि संबंधित सेवांसाठी या पोर्टलवरील 'Water Services' विभाग पहा."
+                else:
+                    response += "\n\n💧 For water connection, bill payment and related services, check the 'Water Services' section on the portal."
+            
+            elif "property" in categories:
+                if is_marathi:
+                    response += "\n\n🏠 मालमत्ता कर, हस्तांतरण आणि संबंधित सेवांसाठी या पोर्टलवरील 'Property Services' विभाग पहा."
+                else:
+                    response += "\n\n🏠 For property tax, transfer and related services, check the 'Property Services' section on the portal."
+            
+            elif "trade" in categories:
+                if is_marathi:
+                    response += "\n\n🏪 व्यापार परवाना, नवीकरण आणि संबंधित सेवांसाठी या पोर्टलवरील 'Trade License' विभाग पहा."
+                else:
+                    response += "\n\n🏪 For trade license, renewal and related services, check the 'Trade License' section on the portal."
+        
+        return response
+    
     def build_search_filters(self, query_intent: Dict[str, Any]) -> Dict[str, Any]:
         """Build metadata filters for targeted search"""
         filters = {}
@@ -277,7 +348,10 @@ class AdvancedRAGQuerySystem:
         if query_intent["needs_contact"]:
             filters["$or"] = [
                 {"content_category": {"$eq": "organizational"}},
+                {"content_category": {"$eq": "office_contact"}},
+                {"content_category": {"$eq": "contact_details"}},
                 {"chunk_type": {"$eq": "table_row"}},
+                {"chunk_type": {"$eq": "contact_info"}},
                 {"keywords": {"$in": ["contact", "phone", "address"]}}
             ]
         
@@ -359,11 +433,18 @@ class AdvancedRAGQuerySystem:
             if "apply" in query_intent["intents"] and "service" in content_category:
                 content_type_boost += 0.3
             
-            if query_intent["needs_contact"] and content_category == "organizational":
+            if query_intent["needs_contact"] and content_category in ["organizational", "office_contact", "contact_details"]:
                 content_type_boost += 0.4
             
             if query_intent["is_procedural"] and "procedure" in text:
                 content_type_boost += 0.2
+            
+            # Boost for statistical queries asking for totals
+            if "statistics" in query_intent["intents"] and metadata.get("chunk_type") == "total_statistics":
+                content_type_boost += 0.6  # Strong boost for total statistics
+            
+            if "statistics" in query_intent["intents"] and "total" in metadata.get("title", "").lower():
+                content_type_boost += 0.4
             
             # Boost for service-related content
             if metadata.get("service_related") == "true":
@@ -441,13 +522,13 @@ class AdvancedRAGQuerySystem:
             
             # Build specialized prompt based on intent
             if "apply" in query_intent["intents"]:
-                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide concise, helpful guidance for municipal services. Always be polite and direct."""
+                system_prompt = """You are a helpful assistant for DMA, Maharashtra. Provide concise, helpful guidance for municipal services. Be polite and direct."""
             
             elif query_intent["needs_contact"]:
-                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide accurate contact information concisely and politely."""
+                system_prompt = """You are a helpful assistant for DMA, Maharashtra. Provide accurate contact information concisely and politely."""
             
             else:
-                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide accurate, concise information about municipal services. Always be polite and helpful."""
+                system_prompt = """You are a helpful assistant for DMA, Maharashtra. Provide accurate, concise information about municipal services. Be polite and helpful."""
             
             # Build the complete prompt
             prompt = f"""{system_prompt}
@@ -483,17 +564,17 @@ Answer:"""
     
     def handle_no_context_response(self, query: str) -> str:
         """Handle queries when no relevant context is found"""
-        # Try to suggest related services
-        return self.suggest_related_services(query)
+        # Try to suggest related services with positive framing
+        return self.suggest_helpful_alternatives(query)
     
-    def suggest_related_services(self, query: str) -> str:
-        """Suggest related services when exact match is not found"""
+    def suggest_helpful_alternatives(self, query: str) -> str:
+        """Suggest helpful alternatives when specific information is not available"""
         try:
             import json
             services_file = os.path.join(BASE_DIR, "final_data", "services.json")
             
             if not os.path.exists(services_file):
-                return "🙏 Sorry, I don't have exact information for your query. Please contact DMA directly for assistance."
+                return "I'd be happy to help you further! For specific information about your query, please contact DMA directly at comdir.ud@maharashtra.gov.in or visit https://mahadma.maharashtra.gov.in/ for comprehensive information."
             
             with open(services_file, 'r', encoding='utf-8') as f:
                 services_data = json.load(f)
@@ -556,20 +637,20 @@ Answer:"""
                     break
             
             if unique_services:
-                response = "🙏 Sorry, I don't have exact information for your query, but I found these related services that might help:\\n\\n"
+                response = "While I don't have specific details about your query, I found these related DMA services that might be helpful:\\n\\n"
                 for i, service in enumerate(unique_services, 1):
                     response += f"{i}. **{service['name']}**"
                     if service['link']:
                         response += f" - {service['link']}"
                     response += "\\n"
-                response += "\\nPlease let me know if any of these services match what you're looking for! 😊"
+                response += "\\nIf none of these match what you're looking for, please contact DMA directly at comdir.ud@maharashtra.gov.in for personalized assistance!"
                 return response
             else:
-                return "🙏 Sorry, I don't have exact information for your query. Please contact DMA directly for assistance or try rephrasing your question."
+                return "I'd be happy to help you with your query! For specific information, please contact DMA directly at comdir.ud@maharashtra.gov.in or visit https://mahadma.maharashtra.gov.in/ where you can find comprehensive information about all municipal services."
                 
         except Exception as e:
             logger.error(f"Error suggesting related services: {e}")
-            return "🙏 Sorry, I don't have exact information for your query. Please contact DMA directly for assistance."
+            return "I'd be happy to help you further! Please contact DMA directly at comdir.ud@maharashtra.gov.in or visit https://mahadma.maharashtra.gov.in/ for comprehensive assistance with your query."
     
     def preprocess_query_with_context(self, user_query: str, conversation_context: str = "") -> str:
         """Enhanced query preprocessing that considers conversation context"""
@@ -613,7 +694,7 @@ Answer:"""
             
             # Special handling for news/announcements queries
             if any(keyword in query_lower for keyword in ["news", "announcement", "update", "latest"]):
-                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 When users ask for news, announcements, or updates, provide BOTH News and Announcements links:
+                system_prompt = """You are a helpful assistant for DMA, Maharashtra. When users ask for news, announcements, or updates, provide BOTH News and Announcements links:
 
 For English users, provide:
 - News: https://mahadma.maharashtra.gov.in/en/news-2/ 
@@ -626,43 +707,18 @@ For Marathi users, also include:
 Always mention both pages as they contain different types of information. Be helpful and comprehensive."""
             
             elif "apply" in query_intent["intents"]:
-                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide concise, helpful guidance for municipal services. Always be polite and direct."""
+                system_prompt = """You are a helpful assistant for DMA, Maharashtra. Provide concise, helpful guidance for municipal services. Be polite and direct."""
             
             elif query_intent["needs_contact"]:
-                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide accurate contact information concisely and politely."""
+                system_prompt = """You are a helpful assistant for DMA, Maharashtra. Provide accurate contact information concisely and politely."""
             
             else:
-                system_prompt = """You are a humble, respectful assistant for DMA, Maharashtra. 🙏 Provide accurate, concise information about municipal services. Always be polite and helpful."""
-            
-            # Quick statistics check for Maharashtra data (bypass vector search for common queries)
-            if self.is_statistics_query(query):
-                quick_response = self.get_quick_statistics_response(query)
-                if quick_response:
-                    return quick_response
+                system_prompt = """You are a helpful assistant for DMA, Maharashtra. Provide accurate, concise information about municipal services. Be polite and helpful."""
             
             # Build the complete prompt with conversation awareness
             prompt = f"""{system_prompt}
 
-MAHARASHTRA URBAN LOCAL BODIES STATISTICS (Always available for quick reference):
-🏛️ Total Municipal Corporations: 29
-🏢 Total Municipal Councils: 248 (Class A: 15, Class B: 77, Class C: 156)
-🏡 Total Nagar Panchayats: 147
-📊 Total Urban Local Bodies: 424
-🏗️ Total Cantonment Boards: 7
-
-महाराष्ट्र नागरी स्थानिक स्वराज्य संस्था आकडेवारी:
-🏛️ एकूण महानगरपालिका: 29
-🏢 एकूण नगरपरिषद: 248 (अ वर्ग: 15, ब वर्ग: 77, क वर्ग: 156)
-🏡 एकूण नगरपंचायत: 147
-📊 एकूण नागरी स्थानिक स्वराज्य संस्था: 424
-🏗️ एकूण कट्टक मंडळ: 7
-
-🆕 Newly Formed Urban Local Bodies:
-1. Fursungi-Devachi Uruli Nagar Parishad (Pune District, Class B)
-2. Pimpalgaon Baswant Nagar Parishad (Nashik District, Class B)  
-3. Yerkheda (Nagpur District, Nagar Panchayat)
-
-Context Information from Database:
+Context Information:
 {context}"""
 
             # Add conversation context if available
@@ -677,18 +733,20 @@ Previous Conversation:
 User Question: {query}
 
 Instructions:
-1. Be humble, respectful, and concise (maximum 3-4 sentences unless absolutely necessary)
+1. Be polite and concise (maximum 3-4 sentences unless absolutely necessary)
 2. Answer based ONLY on the provided context information
-3. Use humble language: "I can help you with...", "Let me assist you...", "Here's what I found..."
+3. Use natural language: "There are...", "The address is...", "Here's the information..."
 4. If this is a follow-up question, refer to the previous conversation appropriately
 5. For reference words like "that", "it", "this", use the conversation context to understand what they refer to
-6. If information is incomplete, politely mention what's missing: "🙏 Sorry, I don't have complete information about..."
+6. If information is incomplete, offer helpful alternatives: "I have some information about this, but for complete details, please contact DMA at comdir.ud@maharashtra.gov.in"
 7. For service applications, provide clear steps without excessive detail
 8. Include relevant URLs/links when available
 9. Keep responses direct and user-focused
 10. Avoid listing multiple services unless specifically asked
-11. CRITICAL: Respond with PLAIN TEXT ONLY. DO NOT use JSON format, markdown code blocks, or any special formatting.
-12. CRITICAL: Do not wrap your response in ```json``` or any code blocks.
+11. CRITICAL: For numerical/statistical queries (total, count, how many), provide the DIRECT ANSWER FIRST, then brief context if needed
+12. CRITICAL: When user asks for totals/counts, prioritize the final number over detailed breakdowns
+13. CRITICAL: Respond with PLAIN TEXT ONLY. DO NOT use JSON format, markdown code blocks, or any special formatting.
+14. CRITICAL: Do not wrap your response in ```json``` or any code blocks.
 
 Provide a direct, plain text answer:"""
 
@@ -706,82 +764,6 @@ Provide a direct, plain text answer:"""
             logger.error(f"Failed to generate response: {e}")
             return "I apologize, but I encountered an error while processing your request. Please try again."
     
-    def is_statistics_query(self, query: str) -> bool:
-        """Check if query is asking for basic Maharashtra statistics that can be answered quickly"""
-        query_lower = query.lower()
-        
-        statistics_keywords = [
-            "total", "how many", "number of", "count", "statistics", "data",
-            "municipal corporation", "municipal council", "nagar panchayat", 
-            "urban local bodies", "cantonment board",
-            "एकूण", "किती", "संख्या", "आकडेवारी", "महानगरपालिका", 
-            "नगरपरिषद", "नगरपंचायत", "कट्टक मंडळ", "newly formed"
-        ]
-        
-        return any(keyword in query_lower for keyword in statistics_keywords)
-    
-    def get_quick_statistics_response(self, query: str) -> str:
-        """Provide quick response for Maharashtra statistics without vector search"""
-        query_lower = query.lower()
-        
-        # Detect language
-        is_marathi = any("\u0900" <= ch <= "\u097F" for ch in query)
-        
-        if "municipal corporation" in query_lower or "महानगरपालिका" in query_lower:
-            if is_marathi:
-                return "🏛️ महाराष्ट्रात एकूण 29 महानगरपालिका आहेत."
-            else:
-                return "🏛️ Maharashtra has a total of 29 Municipal Corporations."
-        
-        elif "municipal council" in query_lower or "नगरपरिषद" in query_lower:
-            if is_marathi:
-                return "🏢 महाराष्ट्रात एकूण 248 नगरपरिषद आहेत: अ वर्ग - 15, ब वर्ग - 77, क वर्ग - 156."
-            else:
-                return "🏢 Maharashtra has a total of 248 Municipal Councils: Class A - 15, Class B - 77, Class C - 156."
-        
-        elif "nagar panchayat" in query_lower or "नगरपंचायत" in query_lower:
-            if is_marathi:
-                return "🏡 महाराष्ट्रात एकूण 147 नगरपंचायत आहेत."
-            else:
-                return "🏡 Maharashtra has a total of 147 Nagar Panchayats."
-        
-        elif "urban local bodies" in query_lower or "नागरी स्थानिक स्वराज्य संस्था" in query_lower:
-            if is_marathi:
-                return "📊 महाराष्ट्रात एकूण 424 नागरी स्थानिक स्वराज्य संस्था आहेत."
-            else:
-                return "📊 Maharashtra has a total of 424 Urban Local Bodies."
-        
-        elif "cantonment" in query_lower or "कट्टक मंडळ" in query_lower:
-            if is_marathi:
-                return "🏗️ महाराष्ट्रात एकूण 7 कट्टक मंडळ आहेत."
-            else:
-                return "🏗️ Maharashtra has a total of 7 Cantonment Boards."
-        
-        elif "newly formed" in query_lower or "नवीन" in query_lower:
-            if is_marathi:
-                return "🆕 नव्याने स्थापन झालेल्या संस्था: 1) फुरसुंगी-देवाची उरुळी नगरपरिषद (पुणे, ब वर्ग), 2) पिंपळगाव बसवंत नगरपरिषद (नाशिक, ब वर्ग), 3) येरखेडा (नागपूर, नगरपंचायत)."
-            else:
-                return "🆕 Newly formed Urban Local Bodies: 1) Fursungi-Devachi Uruli Nagar Parishad (Pune District, Class B), 2) Pimpalgaon Baswant Nagar Parishad (Nashik District, Class B), 3) Yerkheda (Nagpur District, Nagar Panchayat)."
-        
-        elif "total" in query_lower or "एकूण" in query_lower:
-            if is_marathi:
-                return """📊 महाराष्ट्र नागरी स्थानिक स्वराज्य संस्था आकडेवारी:
-🏛️ एकूण महानगरपालिका: 29
-🏢 एकूण नगरपरिषद: 248 (अ वर्ग: 15, ब वर्ग: 77, क वर्ग: 156)
-🏡 एकूण नगरपंचायत: 147
-📊 एकूण नागरी स्थानिक स्वराज्य संस्था: 424
-🏗️ एकूण कट्टक मंडळ: 7"""
-            else:
-                return """📊 Maharashtra Urban Local Bodies Statistics:
-🏛️ Total Municipal Corporations: 29
-🏢 Total Municipal Councils: 248 (Class A: 15, Class B: 77, Class C: 156)
-🏡 Total Nagar Panchayats: 147
-📊 Total Urban Local Bodies: 424
-🏗️ Total Cantonment Boards: 7"""
-        
-        # If no specific match, return None to continue with normal processing
-        return None
-
     def clean_response_format(self, response_text: str) -> str:
         """Clean response text to remove JSON formatting and code blocks"""
         try:
@@ -825,6 +807,10 @@ Provide a direct, plain text answer:"""
         logger.info(f"Detected intents: {query_intent['intents']}")
         logger.info(f"Service categories: {query_intent['service_categories']}")
         
+        # Check if this is a service-related query
+        if query_intent["service_categories"] or self.is_general_service_query(user_query):
+            return self.handle_service_query(user_query, query_intent, start_time)
+        
         # Build search filters
         filters = self.build_search_filters(query_intent)
         
@@ -832,8 +818,8 @@ Provide a direct, plain text answer:"""
         search_results = self.semantic_search(processed_query, filters)
         
         if not search_results:
-            # Try to suggest related services from services.json
-            suggested_response = self.suggest_related_services(processed_query)
+            # Try to suggest helpful alternatives with positive framing
+            suggested_response = self.suggest_helpful_alternatives(processed_query)
             return {
                 "query": user_query,
                 "response": suggested_response,
