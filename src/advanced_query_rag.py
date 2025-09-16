@@ -172,12 +172,28 @@ class AdvancedRAGQuerySystem:
     def is_general_service_query(self, query: str) -> bool:
         """Check if query is asking about services in general"""
         query_lower = query.lower()
-        general_service_keywords = [
-            "services", "service", "सेवा", "सेवाएं", "apply", "application", 
-            "form", "online services", "municipal services", "government services",
-            "how to apply", "where to apply", "license", "certificate", "registration"
+        
+        # Keywords that indicate service application/process queries
+        service_application_keywords = [
+            "apply", "application", "form", "online services", 
+            "how to apply", "where to apply", "registration process",
+            "license application", "certificate application", "permit application"
         ]
-        return any(keyword in query_lower for keyword in general_service_keywords)
+        
+        # Keywords that indicate informational queries (NOT service applications)
+        informational_keywords = [
+            "newly formed", "formed", "created", "established", "formation", 
+            "which are", "what are", "list of", "total", "how many", "count",
+            "ulb in", "urban local body", "municipal council", "municipal corporation",
+            "gazette", "notification", "structure", "organization", "department"
+        ]
+        
+        # If it's clearly an informational query, don't treat as service query
+        if any(keyword in query_lower for keyword in informational_keywords):
+            return False
+        
+        # Only treat as service query if it has clear service application keywords
+        return any(keyword in query_lower for keyword in service_application_keywords)
     
     def extract_query_intent(self, query: str) -> Dict[str, Any]:
         """Extract intent and entities from query"""
@@ -807,8 +823,19 @@ Provide a direct, plain text answer:"""
         logger.info(f"Detected intents: {query_intent['intents']}")
         logger.info(f"Service categories: {query_intent['service_categories']}")
         
-        # Check if this is a service-related query
-        if query_intent["service_categories"] or self.is_general_service_query(user_query):
+        # Check if this is a service-related query (but not informational ULB queries)
+        is_service_query = self.is_general_service_query(user_query)
+        has_service_categories = bool(query_intent["service_categories"])
+        
+        # Additional check: don't redirect informational ULB queries to services
+        query_lower = user_query.lower()
+        is_ulb_info_query = any(keyword in query_lower for keyword in [
+            "newly formed ulb", "formed ulb", "which ulb", "list of ulb", 
+            "ulb in maharashtra", "urban local body", "municipal council",
+            "how many ulb", "total ulb", "count of ulb"
+        ])
+        
+        if (is_service_query or has_service_categories) and not is_ulb_info_query:
             return self.handle_service_query(user_query, query_intent, start_time)
         
         # Build search filters
