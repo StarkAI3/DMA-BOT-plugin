@@ -169,32 +169,6 @@ class AdvancedRAGQuerySystem:
         
         return query
     
-    def is_general_service_query(self, query: str) -> bool:
-        """Check if query is asking about services in general"""
-        query_lower = query.lower()
-        
-        # Keywords that indicate service application/process queries
-        service_application_keywords = [
-            "apply", "application", "form", "online services", 
-            "how to apply", "where to apply", "registration process",
-            "license application", "certificate application", "permit application"
-        ]
-        
-        # Keywords that indicate informational queries (NOT service applications)
-        informational_keywords = [
-            "newly formed", "formed", "created", "established", "formation", 
-            "which are", "what are", "list of", "total", "how many", "count",
-            "ulb in", "urban local body", "municipal council", "municipal corporation",
-            "gazette", "notification", "structure", "organization", "department"
-        ]
-        
-        # If it's clearly an informational query, don't treat as service query
-        if any(keyword in query_lower for keyword in informational_keywords):
-            return False
-        
-        # Only treat as service query if it has clear service application keywords
-        return any(keyword in query_lower for keyword in service_application_keywords)
-    
     def extract_query_intent(self, query: str) -> Dict[str, Any]:
         """Extract intent and entities from query"""
         query_lower = query.lower()
@@ -261,66 +235,6 @@ class AdvancedRAGQuerySystem:
             "needs_contact": any(word in query_lower for word in ["contact", "phone", "office", "address"]),
             "is_article_query": "article" in detected_intents or bool(re.search(r'\barticle\s+\d+\b', query_lower))
         }
-    
-    def handle_service_query(self, user_query: str, query_intent: Dict[str, Any], start_time: float) -> Dict[str, Any]:
-        """Handle service-related queries with unified link"""
-        logger.info(f"Handling service query: {user_query}")
-        
-        # Create a unified response for all services
-        response = self.generate_unified_service_response(user_query, query_intent)
-        
-        return {
-            "query": user_query,
-            "response": response,
-            "sources": [{"url": "https://mahaulb.in/MahaULB/index", "title": "Maharashtra ULB Services Portal"}],
-            "processing_time": time.time() - start_time,
-            "metadata": {
-                "intent": query_intent,
-                "results_found": 1,
-                "service_redirect": True
-            }
-        }
-    
-    def generate_unified_service_response(self, query: str, query_intent: Dict[str, Any]) -> str:
-        """Generate a unified response for service queries"""
-        query_lower = query.lower()
-        
-        # Detect language preference
-        is_marathi = any(char in query for char in "अआइईउऊऋऌएऐओऔकखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसह")
-        
-        if is_marathi:
-            base_response = "महाराष्ट्र शहरी स्थानिक स्वराज्य संस्थांच्या सर्व सेवांसाठी कृपया खालील लिंकवर भेट द्या:"
-            portal_text = "Maharashtra ULB सेवा पोर्टल"
-            help_text = "येथे तुम्हाला सर्व नगरपालिका सेवा, अर्ज प्रक्रिया, आणि आवश्यक माहिती मिळेल."
-        else:
-            base_response = "For all Maharashtra Urban Local Body services, please visit:"
-            portal_text = "Maharashtra ULB Services Portal"
-            help_text = "Here you'll find all municipal services, application processes, and required information."
-        
-        response = f"{base_response}\n\n🔗 **{portal_text}**: https://mahaulb.in/MahaULB/index\n\n{help_text}"
-        
-        # Add specific guidance based on detected service categories
-        if query_intent["service_categories"]:
-            categories = query_intent["service_categories"]
-            if "water" in categories:
-                if is_marathi:
-                    response += "\n\n💧 पाणी कनेक्शन, बिल पेमेंट आणि संबंधित सेवांसाठी या पोर्टलवरील 'Water Services' विभाग पहा."
-                else:
-                    response += "\n\n💧 For water connection, bill payment and related services, check the 'Water Services' section on the portal."
-            
-            elif "property" in categories:
-                if is_marathi:
-                    response += "\n\n🏠 मालमत्ता कर, हस्तांतरण आणि संबंधित सेवांसाठी या पोर्टलवरील 'Property Services' विभाग पहा."
-                else:
-                    response += "\n\n🏠 For property tax, transfer and related services, check the 'Property Services' section on the portal."
-            
-            elif "trade" in categories:
-                if is_marathi:
-                    response += "\n\n🏪 व्यापार परवाना, नवीकरण आणि संबंधित सेवांसाठी या पोर्टलवरील 'Trade License' विभाग पहा."
-                else:
-                    response += "\n\n🏪 For trade license, renewal and related services, check the 'Trade License' section on the portal."
-        
-        return response
     
     def build_search_filters(self, query_intent: Dict[str, Any]) -> Dict[str, Any]:
         """Build metadata filters for targeted search"""
@@ -423,6 +337,7 @@ class AdvancedRAGQuerySystem:
             metadata = result["metadata"]
             text = result["text"].lower()
             query_lower = query.lower()
+            title_lower = str(metadata.get("title", "")).lower()
             
             # Boost based on importance score
             importance_boost = float(metadata.get("importance_score", 0.5)) * 0.2
@@ -462,6 +377,30 @@ class AdvancedRAGQuerySystem:
             if "statistics" in query_intent["intents"] and "total" in metadata.get("title", "").lower():
                 content_type_boost += 0.4
             
+            # Service-specific boosts: favor exact title/name matches for actionable links
+            service_boost = 0.0
+            is_service_chunk = metadata.get("chunk_type") == "service_definition" or metadata.get("data_type") == "service"
+            if is_service_chunk:
+                # direct phrase boosts
+                service_phrases = [
+                    "new water connection",
+                    "water connection",
+                    "water bill payment",
+                    "trade license",
+                    "marriage registration",
+                    "no due certificate",
+                ]
+                if any(phrase in query_lower for phrase in service_phrases) and any(phrase in title_lower for phrase in service_phrases):
+                    service_boost += 0.5
+                # token overlap boost between query and service title
+                title_tokens = set([w for w in re.split(r"\W+", title_lower) if len(w) > 2])
+                q_tokens = set([w for w in re.split(r"\W+", query_lower) if len(w) > 2])
+                overlap = len(title_tokens.intersection(q_tokens))
+                if overlap >= 2:
+                    service_boost += 0.3
+                elif overlap == 1:
+                    service_boost += 0.15
+
             # Boost for service-related content
             if metadata.get("service_related") == "true":
                 content_type_boost += 0.1
@@ -474,7 +413,7 @@ class AdvancedRAGQuerySystem:
             elif text_length > 1000:
                 length_penalty = -0.1
             
-            final_score = base_score + importance_boost + keyword_boost + content_type_boost + length_penalty + article_boost
+            final_score = base_score + importance_boost + keyword_boost + content_type_boost + service_boost + length_penalty + article_boost
             return min(1.0, max(0.0, final_score))
         
         # Calculate relevance scores and sort
@@ -486,6 +425,38 @@ class AdvancedRAGQuerySystem:
         
         logger.info(f"Reranked results. Top score: {reranked[0]['relevance_score']:.3f}" if reranked else "No results to rerank")
         return reranked[:FINAL_CONTEXT_LIMIT]
+
+    def _maybe_direct_service_answer(self, query: str, results: List[Dict[str, Any]], query_intent: Dict[str, Any]) -> Optional[str]:
+        """If the query looks service-related and we have service chunks, return a crisp direct link answer."""
+        if not results:
+            return None
+        # Consider only service chunks
+        service_like = [
+            r for r in results
+            if (r["metadata"].get("data_type") == "service") or (r["metadata"].get("chunk_type") == "service_definition")
+        ]
+        if not service_like:
+            return None
+        q_lower = query.lower()
+        # Prefer items whose title best matches query tokens
+        def score_service(r: Dict[str, Any]) -> float:
+            title = str(r["metadata"].get("title", "")).lower()
+            title_tokens = set([w for w in re.split(r"\W+", title) if len(w) > 2])
+            q_tokens = set([w for w in re.split(r"\W+", q_lower) if len(w) > 2])
+            overlap = len(title_tokens.intersection(q_tokens))
+            exact_phrases = 1.0 if title in q_lower or any(title.startswith(p) for p in ["new ", "apply "]) else 0.0
+            return overlap + exact_phrases
+        service_like_sorted = sorted(service_like, key=score_service, reverse=True)
+
+        best = service_like_sorted[0]
+        title = best["metadata"].get("title", "Service")
+        url = best["metadata"].get("source_url", "")
+
+        language_hint_mr = any("\u0900" <= ch <= "\u097f" for ch in query)
+        if language_hint_mr and best["metadata"].get("language") == "mr":
+            return f"या सेवेसाठी लिंक: {title} — {url}"
+        # default English/plain text
+        return f"Use this link for {title}: {url}"
     
     def build_context(self, results: List[Dict[str, Any]]) -> str:
         """Build optimized context for Gemini"""
@@ -767,6 +738,16 @@ Instructions:
 Provide a direct, plain text answer:"""
 
             # Generate response
+            # Before calling the LLM, if this looks like a service query and we have service chunks in context,
+            # provide a direct link answer for higher precision and latency savings.
+            if query_intent["service_categories"]:
+                # Try to reconstruct results used in context by parsing headers in context string
+                # or fallback to a fresh lightweight search without filters to pick the best service link.
+                quick_results = self.semantic_search(query)
+                direct = self._maybe_direct_service_answer(query, quick_results, query_intent)
+                if direct:
+                    return direct
+
             response = self.gemini_model.generate_content(prompt)
             
             if response and response.text:
@@ -822,21 +803,6 @@ Provide a direct, plain text answer:"""
         logger.info(f"Processing query: '{user_query}'")
         logger.info(f"Detected intents: {query_intent['intents']}")
         logger.info(f"Service categories: {query_intent['service_categories']}")
-        
-        # Check if this is a service-related query (but not informational ULB queries)
-        is_service_query = self.is_general_service_query(user_query)
-        has_service_categories = bool(query_intent["service_categories"])
-        
-        # Additional check: don't redirect informational ULB queries to services
-        query_lower = user_query.lower()
-        is_ulb_info_query = any(keyword in query_lower for keyword in [
-            "newly formed ulb", "formed ulb", "which ulb", "list of ulb", 
-            "ulb in maharashtra", "urban local body", "municipal council",
-            "how many ulb", "total ulb", "count of ulb"
-        ])
-        
-        if (is_service_query or has_service_categories) and not is_ulb_info_query:
-            return self.handle_service_query(user_query, query_intent, start_time)
         
         # Build search filters
         filters = self.build_search_filters(query_intent)
