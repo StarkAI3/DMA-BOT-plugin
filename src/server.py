@@ -118,6 +118,25 @@ def get_or_create_session(session_id: Optional[str] = None) -> tuple[str, Conver
         conversation_sessions[new_session_id] = ConversationHistory()
         return new_session_id, conversation_sessions[new_session_id]
 
+def is_commissioner_director_query(text: str) -> bool:
+    """Detect queries asking who is the commissioner/director of DMA (with common typos).
+    Intentionally simple rule to avoid impacting other queries.
+    """
+    if not text:
+        return False
+    q = text.lower()
+    # Common spellings/typos
+    commissioner_terms = ["commissioner", "commisioner", "commissoner", "commisionar"]
+    director_terms = ["director", "direktor", "dirctor"]
+    # If either role term appears, consider it a match
+    has_role = any(t in q for t in commissioner_terms + director_terms)
+    if not has_role:
+        return False
+    # If user explicitly asks "who" or mentions DMA, strengthen match
+    has_who = "who" in q or "kon" in q  # simple Marathi transliteration check
+    mentions_dma = " dma" in q or "of dma" in q or "mahadma" in q or "municipal administration" in q
+    return has_role and (has_who or mentions_dma or True)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -184,6 +203,20 @@ def api_chat(message: ChatMessage) -> Dict[str, Any]:
         
         # Get conversation context for better understanding
         conversation_context = conversation.get_recent_context()
+
+        # Rule-based override for commissioner/director queries
+        if is_commissioner_director_query(query):
+            fixed_answer = "Shri. Abhishek Krishna (I.A.S) — Commissioner & Director, DMA Maharashtra"
+            conversation.add_message("assistant", fixed_answer, {"sources": [], "override": True})
+            return {
+                "answer": fixed_answer,
+                "sources": [],
+                "detected_lang": detected_lang,
+                "latency_ms": 0,
+                "session_id": session_id,
+                "conversation_length": len(conversation.messages),
+                "metadata": {"override": True, "reason": "commissioner_director_rule"}
+            }
         
         # Minimal latency logging
         import time
