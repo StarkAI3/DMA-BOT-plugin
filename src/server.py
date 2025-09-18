@@ -97,6 +97,38 @@ def clean_response_format(response_text: str) -> str:
         print(f"Warning: Error cleaning response format: {e}")
         return response_text
 
+def ensure_designation_for_abhishek_krishna(text: str) -> str:
+    """Ensure '(I.A.S)' follows Hon. Shri. Abhishek Krishna mentions.
+    Avoid duplicating if already present; handle common variants and case-insensitive matches.
+    """
+    try:
+        # If already contains the designation next to the name, skip
+        if re.search(r"abhishek\s+krishna\s*\(\s*i\.a\.s\.?\s*\)", text, flags=re.IGNORECASE):
+            return text
+
+        # Patterns for common name variants
+        name_patterns = [
+            r"hon\.?\s*shri\.?\s*abhishek\s+krishna",
+            r"shri\.?\s*abhishek\s+krishna",
+            r"abhishek\s+krishna",
+        ]
+
+        def replacer(match: re.Match) -> str:
+            return f"{match.group(0)} (I.A.S)"
+
+        updated_text = text
+        for pattern in name_patterns:
+            # Only add if not already followed by designation
+            updated_text = re.sub(
+                rf"({pattern})(?!\s*\(\s*i\.a\.s\.?\s*\))",
+                replacer,
+                updated_text,
+                flags=re.IGNORECASE,
+            )
+        return updated_text
+    except Exception:
+        return text
+
 def get_or_create_session(session_id: Optional[str] = None) -> tuple[str, ConversationHistory]:
     """Get existing session or create new one"""
     global conversation_sessions
@@ -118,24 +150,7 @@ def get_or_create_session(session_id: Optional[str] = None) -> tuple[str, Conver
         conversation_sessions[new_session_id] = ConversationHistory()
         return new_session_id, conversation_sessions[new_session_id]
 
-def is_commissioner_director_query(text: str) -> bool:
-    """Detect queries asking who is the commissioner/director of DMA (with common typos).
-    Intentionally simple rule to avoid impacting other queries.
-    """
-    if not text:
-        return False
-    q = text.lower()
-    # Common spellings/typos
-    commissioner_terms = ["commissioner", "commisioner", "commissoner", "commisionar"]
-    director_terms = ["director", "direktor", "dirctor"]
-    # If either role term appears, consider it a match
-    has_role = any(t in q for t in commissioner_terms + director_terms)
-    if not has_role:
-        return False
-    # If user explicitly asks "who" or mentions DMA, strengthen match
-    has_who = "who" in q or "kon" in q  # simple Marathi transliteration check
-    mentions_dma = " dma" in q or "of dma" in q or "mahadma" in q or "municipal administration" in q
-    return has_role and (has_who or mentions_dma or True)
+ 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -204,19 +219,6 @@ def api_chat(message: ChatMessage) -> Dict[str, Any]:
         # Get conversation context for better understanding
         conversation_context = conversation.get_recent_context()
 
-        # Rule-based override for commissioner/director queries
-        if is_commissioner_director_query(query):
-            fixed_answer = "Shri. Abhishek Krishna (I.A.S) — Commissioner & Director, DMA Maharashtra"
-            conversation.add_message("assistant", fixed_answer, {"sources": [], "override": True})
-            return {
-                "answer": fixed_answer,
-                "sources": [],
-                "detected_lang": detected_lang,
-                "latency_ms": 0,
-                "session_id": session_id,
-                "conversation_length": len(conversation.messages),
-                "metadata": {"override": True, "reason": "commissioner_director_rule"}
-            }
         
         # Minimal latency logging
         import time
@@ -231,6 +233,9 @@ def api_chat(message: ChatMessage) -> Dict[str, Any]:
         
         # Clean response format to remove JSON formatting issues
         response_text = clean_response_format(response_text)
+
+        # Ensure designation is appended for specific person
+        response_text = ensure_designation_for_abhishek_krishna(response_text)
         
         conversation.add_message("assistant", response_text, {"sources": result.get("sources", [])})
         
