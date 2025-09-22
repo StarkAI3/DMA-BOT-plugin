@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Advanced RAG Query System with Gemini 2.0 Flash
+Advanced RAG Query System with Gemini 2.5 Flash
 Optimized for maximum accuracy and context-aware responses
 """
 
@@ -100,9 +100,9 @@ class AdvancedRAGQuerySystem:
             
             genai.configure(api_key=api_key)
             
-            # Use Gemini 2.0 Flash for optimal performance [[memory:8625932]]
+            # Use Gemini 2.5 Flash for optimal performance
             self.gemini_model = genai.GenerativeModel(
-                model_name="gemini-2.0-flash",
+                model_name="gemini-2.5-flash",
                 generation_config={
                     "temperature": 0.1,  # Low temperature for accuracy
                     "top_p": 0.9,
@@ -139,8 +139,36 @@ class AdvancedRAGQuerySystem:
             logger.error(f"Failed to setup Pinecone: {e}")
             return False
     
+    def check_role_queries(self, query: str) -> Optional[str]:
+        """Check if query is about Director/Commissioner roles and return specific response"""
+        query_lower = query.lower().strip()
+
+        # Define role-related keywords
+        role_keywords = {
+            'director': ['director', 'directors', 'dma director', 'municipal director'],
+            'commissioner': ['commissioner', 'commissioners', 'dma commissioner', 'municipal commissioner'],
+            'who': ['who is', 'who are', "what's", 'what is', 'tell me about', 'information about']
+        }
+
+        # Check if query contains role-related terms
+        has_role_term = any(keyword in query_lower for keyword in role_keywords['director'] + role_keywords['commissioner'])
+        has_question_word = any(keyword in query_lower for keyword in role_keywords['who'])
+
+        if has_role_term and has_question_word:
+            # This is a query about Director/Commissioner - return specific response
+            return "Hon. Shri. Abhishek Krishna (I.A.S) is the Commissioner and Director."
+
+        return None
+
     def preprocess_query(self, query: str) -> str:
         """Preprocess and enhance user query"""
+        # Check for role-specific queries first
+        role_response = self.check_role_queries(query)
+        if role_response:
+            # Set a flag in metadata to indicate this was a role query
+            self.role_query_response = role_response
+            return query
+
         # Clean the query
         query = query.strip()
         
@@ -642,26 +670,27 @@ Answer:"""
     def preprocess_query_with_context(self, user_query: str, conversation_context: str = "") -> str:
         """Enhanced query preprocessing that considers conversation context"""
         processed_query = self.preprocess_query(user_query)
-        
+
         if not conversation_context:
             return processed_query
-        
+
         # Check for reference words that might need context
-        reference_words = ['that', 'it', 'this', 'they', 'them', 'those', 'these', 'previous', 'above', 'earlier']
+        reference_words = ['that', 'it', 'this', 'they', 'them', 'those', 'these', 'previous', 'above', 'earlier', 'mentioned', 'discussed', 'before', 'again']
         query_lower = user_query.lower()
-        
+
         has_reference = any(word in query_lower for word in reference_words)
-        
-        # If query is very short or has reference words, enhance with context
-        if len(user_query.split()) <= 3 or has_reference:
+
+        # Only use context if there's a clear dependency or very short query
+        if len(user_query.split()) <= 2 or has_reference:
             # Extract relevant context from conversation
             context_lines = conversation_context.split('\n')
-            recent_context = context_lines[-4:] if len(context_lines) > 4 else context_lines
-            
+            recent_context = context_lines[-3:] if len(context_lines) > 3 else context_lines
+
             # Add context information to help understanding
             enhanced_query = f"{processed_query}\n\nConversation context:\n{chr(10).join(recent_context)}"
             return enhanced_query
-        
+
+        # For standalone queries, don't use context to avoid interference
         return processed_query
     
     def generate_response_with_context(self, query: str, context: str, query_intent: Dict[str, Any], conversation_context: str = "") -> str:
@@ -795,7 +824,23 @@ Provide a direct, plain text answer:"""
     def query(self, user_query: str, conversation_context: str = "") -> Dict[str, Any]:
         """Process complete query pipeline"""
         start_time = time.time()
-        
+
+        # Check for role-specific queries first (Director/Commissioner)
+        role_response = self.check_role_queries(user_query)
+        if role_response:
+            return {
+                "query": user_query,
+                "response": role_response,
+                "sources": [],
+                "processing_time": time.time() - start_time,
+                "metadata": {
+                    "intent": {"intents": ["information"], "service_categories": [], "is_procedural": False, "needs_contact": False, "is_article_query": False},
+                    "results_found": 0,
+                    "context_chunks": 0,
+                    "is_role_query": True
+                }
+            }
+
         # Preprocess query with conversation context
         processed_query = self.preprocess_query_with_context(user_query, conversation_context)
         query_intent = self.extract_query_intent(processed_query)

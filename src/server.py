@@ -217,7 +217,14 @@ def api_chat(message: ChatMessage) -> Dict[str, Any]:
         conversation.add_message("user", query)
         
         # Get conversation context for better understanding
+        # Only use context if query shows clear dependency on previous conversation
         conversation_context = conversation.get_recent_context()
+        context_dependent_keywords = ['that', 'it', 'this', 'they', 'them', 'those', 'these', 'previous', 'above', 'earlier', 'mentioned', 'discussed', 'before', 'again']
+        is_context_dependent = any(keyword in query.lower() for keyword in context_dependent_keywords) or len(query.split()) <= 3
+
+        # If not clearly context-dependent, don't pass conversation context
+        if not is_context_dependent:
+            conversation_context = ""
 
         
         # Minimal latency logging
